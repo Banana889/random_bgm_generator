@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Generative Guitar with Chords</title>
+    <style>
+        body {
+            background-color: #222;
+            color: #ff9d00; /* 琥珀色，更有电子管音箱的感觉 */
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            background: transparent;
+            border: 2px solid #ff9d00;
+            color: #ff9d00;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-bottom: 20px;
+        }
+        button:hover { background: #ff9d00; color: #222; }
+        
+        .display-area {
+            display: flex;
+            gap: 40px;
+            text-align: center;
+        }
+        .chord-box {
+            border: 1px solid #555;
+            padding: 20px;
+            width: 200px;
+        }
+        h1 { font-size: 3rem; margin: 0; }
+        h3 { color: #888; margin-top: 5px; }
+        #log { font-size: 0.8rem; color: #666; height: 100px; overflow: hidden; margin-top: 20px;}
+    </style>
+</head>
+<body>
+
+    <button id="start-btn">Start Session (Click Me)</button>
+    
+    <div class="display-area" style="opacity: 0.3" id="main-ui">
+        <div class="chord-box">
+            <h3>CURRENT CHORD</h3>
+            <h1 id="chord-display">--</h1>
+            <div id="chord-detail">Waiting...</div>
+        </div>
+        <div class="chord-box">
+            <h3>MELODY NOTE</h3>
+            <h1 id="note-display">--</h1>
+        </div>
+    </div>
+    <div id="log"></div>
+
+<script>
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let ctx;
+    let masterGain;
+    let reverbNode;
+
+    // --- 1. 乐理数据库 (Music Theory DB) ---
+    
+    // 频率表
+    const FREQ = {
+        'G2': 98.00, 'A2': 110.00, 'C3': 130.81, 'D3': 146.83, 'E3': 164.81, 'F3': 174.61, 
+        'G3': 196.00, 'A3': 220.00, 'B3': 246.94,
+        'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00, 'A4': 440.00, 'B4': 493.88,
+        'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'G5': 783.99, 'A5': 880.00
+    };
+
+    // 完整的 C 大调音阶 (旋律可以在这里面跑)
+    const SCALE = ['C3','D3','E3','F3','G3','A3','B3','C4','D4','E4','F4','G4','A4','B4','C5','D5','E5','G5','A5'];
+
+    // 和弦进行 (I - vi - IV - V) 也就是 Cmaj7 -> Am7 -> Fmaj7 -> G6
+    const PROGRESSION = [
+        { name: "Cmaj7", root: "C3", type: "major", tones: ["C", "E", "G", "B"] },
+        { name: "Am7",   root: "A2", type: "minor", tones: ["A", "C", "E", "G"] },
+        { name: "Fmaj7", root: "F3", type: "major", tones: ["F", "A", "C", "E"] },
+        { name: "G6",    root: "G2", type: "major", tones: ["G", "B", "D", "E"] } // G6 很有氛围感
+    ];
+
+    let currentChordIndex = 0;
+    let lastPlayedNoteIndex = 7; // Start around Middle C
+
+    // --- 2. 音频引擎 (Audio Engine) ---
+
+    // 2.1 简单的卷积混响 (Convolution Reverb) - 让声音听起来像在"房间"里
+    // 为了不加载外部文件，这里用算法生成一个简单的 Impulse Response
+    function createReverb() {
+        const convolver = ctx.createConvolver();
+        const rate = ctx.sampleRate;
+        const length = rate * 3; // 3秒混响尾巴
+        const decay = 2.0;
+        const buffer = ctx.createBuffer(2, length, rate);
+        
+        for (let channel = 0; channel < 2; channel++) {
+            const data = buffer.getChannelData(channel);
+            for (let i = 0; i < length; i++) {
+                // 生成指数衰减的噪音
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+            }
+        }
+        convolver.buffer = buffer;
+        return convolver;
+    }
+
+    // 2.2 和弦铺底合成器 (Pad Synth)
+    let currentPadOscillators = [];
+        
+        // --- 高级 Pad 合成器配置 ---
+    const padConfig = {
+        volume: 0.015,         // 降低音量 (原 0.03)，让它退到背景里
+        waveform: 'triangle',  
+        cutoff: 1200,           // 降低截止频率 (原 1500)，让声音变"暗"，不抢旋律
+        attackTime: 2.0,       // 增加淡入时间 (原 1.0)，让和弦缓慢浮现，像云一样
+        releaseTime: 0.5       // 缩短淡出时间 (原 1.5)，快速切断上一个和弦，减少浑浊
+    };
+
+    function playPad(chord) {
+
+        const now = ctx.currentTime;
+        const releaseTime = padConfig.releaseTime; // 读取你的配置，比如 3秒
+
+        // --- 1. 彻底清除上一组和弦 ---
+        currentPadOscillators.forEach(item => {
+            try {
+                // A. 关键：取消该节点上所有未来计划的音量变化
+                item.gain.gain.cancelScheduledValues(now);
+                
+                // B. 关键：锚定当前音量。
+                item.gain.gain.setValueAtTime(item.gain.gain.value, now);
+                
+                // C. 线性淡出到 0 (完全静音)
+                item.gain.gain.linearRampToValueAtTime(0, now + releaseTime);
+                
+                // D. 停止振荡器
+                item.osc.stop(now + releaseTime + 0.2); 
+                
+            } catch(e) {
+                console.error("Fade out error:", e);
+            }
+        });
+        
+        // 清空数组
+        currentPadOscillators = [];
+    
+        // 2. 决定要播放哪些音
+        // 这里我们稍微加点料：除了根音(Root)和五音(5th)，再加一个高八度的根音，让声场更宽
+        const freqs = [
+            FREQ[chord.root],             // Root
+            FREQ[chord.root] * 1.5,       // 5th
+            FREQ[chord.root] * 2          // Octave Root
+        ]; 
+
+        freqs.forEach((f, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const filter = ctx.createBiquadFilter(); // 新增：滤波器节点
+
+            // --- A. 设置波形 (Tone Source) ---
+            osc.type = padConfig.waveform; 
+            osc.frequency.value = f;
+
+            // 微调音高 (Detune)
+            osc.detune.value = (Math.random() * 10) - 5; 
+
+            // --- B. 设置滤波器 (Tone Knob) ---
+            filter.type = 'lowpass'; 
+            filter.frequency.value = padConfig.cutoff; 
+            filter.Q.value = 1; 
+
+            // --- C. 设置音量包络 (Volume) ---
+            gain.gain.setValueAtTime(0, now);
+            // 淡入
+            gain.gain.linearRampToValueAtTime(padConfig.volume, now + padConfig.attackTime); 
+
+            // --- D. 连接线路 ---
+            // Oscillator -> Filter -> Gain -> Reverb -> Master
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(reverbNode); 
+            
+            // --- E. 垃圾回收关键：播放结束后断开连接 ---
+            osc.onended = () => {
+                try {
+                    osc.disconnect();
+                    filter.disconnect();
+                    gain.disconnect();
+                } catch(e) {
+                    // 忽略已经断开的错误
+                }
+            };
+
+            osc.start(now);
+            
+            // 存入数组以便后续控制停止
+            currentPadOscillators.push({osc, gain});
+        });
+    }
+
+    // 2.3 旋律合成器 (Lead Synth) - 类似上一版
+    function playMelodyNote(freq, duration) {
+        const t = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        
+        // 颤音效果 (Vibrato) - 吉他手的揉弦
+        // const lfo = ctx.createOscillator();
+        // lfo.frequency.value = 5; // 5Hz 揉弦速度
+        // const lfoGain = ctx.createGain();
+        // lfoGain.gain.value = 2; // 揉弦幅度
+        // lfo.connect(lfoGain);
+        // lfoGain.connect(osc.frequency);
+        // lfo.start(t);
+
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.2, t + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+        osc.connect(gain);
+        
+        // 增加一个立体声乒乓延时 (Ping Pong Delay)
+        const panner = ctx.createStereoPanner();
+        panner.pan.value = (Math.random() * 2) - 1; // 随机声像
+        
+        gain.connect(panner);
+        panner.connect(reverbNode); // 进混响
+        
+        osc.start(t);
+        osc.stop(t + duration);
+    }
+
+    // --- 3. 核心逻辑：基于和弦的马尔可夫权重计算 ---
+
+    function getNoteWeight(noteName, noteIndex, chord) {
+        let weight = 10; // 基础权重
+
+        // 1. 和声匹配 (Harmony Check)
+        // 剥离八度，只看音名 (e.g. "C4" -> "C")
+        const pitchClass = noteName.slice(0, -1);
+        
+        if (chord.tones.includes(pitchClass)) {
+            weight += 50; // 如果是和弦内音 (Chord Tone)，权重极大增加
+        }
+
+        // 2. 物理限制 (Physical Distance)
+        // 吉他手不喜欢频繁的大跳。离上一个音越近，权重越高。
+        const distance = Math.abs(noteIndex - lastPlayedNoteIndex);
+        if (distance === 0) weight -= 5; // 尽量不要重复同一个音
+        if (distance > 4) weight -= 20;  // 超过4度的大跳，权重降低
+        if (distance > 7) weight -= 100; // 几乎禁止超过8度的大跳
+
+        // 3. 走向倾向 (Direction)
+        // (这里可以扩展，比如如果是 V 级和弦，增加回到 I 级主音的权重)
+
+        return Math.max(0, weight);
+    }
+
+    function pickNextNote() {
+        const currentChord = PROGRESSION[currentChordIndex];
+        
+        // 计算所有可选音的权重
+        let weightSum = 0;
+        const candidates = SCALE.map((note, index) => {
+            const w = getNoteWeight(note, index, currentChord);
+            weightSum += w;
+            return { note, index, weight: w };
+        });
+
+        // 轮盘赌算法选择 (Weighted Random Selection)
+        let r = Math.random() * weightSum;
+        for (let item of candidates) {
+            r -= item.weight;
+            if (r <= 0) {
+                return item;
+            }
+        }
+        return candidates[0]; // Fallback
+    }
+
+    // --- 4. 调度器 (Conductor) ---
+
+    let nextNoteTime = 0;
+    let nextChordTime = 0;
+
+    function startEngine() {
+        ctx = new AudioContext();
+        masterGain = ctx.createGain();
+        masterGain.gain.value = 0.5;
+        masterGain.connect(ctx.destination);
+        
+        reverbNode = createReverb();
+        reverbNode.connect(masterGain);
+
+        nextNoteTime = ctx.currentTime + 0.5;
+        nextChordTime = ctx.currentTime;
+        
+        requestAnimationFrame(tick);
+    }
+
+    function tick() {
+        const now = ctx.currentTime;
+
+        // A. 和弦切换逻辑 (每 3 秒换一次和弦)
+        if (now >= nextChordTime) {
+            const chord = PROGRESSION[currentChordIndex];
+            
+            // UI 更新
+            document.getElementById('chord-display').innerText = chord.name;
+            document.getElementById('chord-detail').innerText = `Notes: ${chord.tones.join("-")}`;
+            
+            // 播放 Pad
+            playPad(chord);
+
+            // 推进到下一个和弦
+            currentChordIndex = (currentChordIndex + 1) % PROGRESSION.length;
+            nextChordTime = now + 3.0; 
+        }
+
+        // B. 旋律播放逻辑
+        if (now >= nextNoteTime) {
+            // 20% 概率休止 (Rest)
+            if (Math.random() > 0.2) {
+                const selection = pickNextNote();
+                lastPlayedNoteIndex = selection.index;
+                
+                const freq = FREQ[selection.note];
+                // 随机时值 (长音或短音)
+                const duration = Math.random() > 0.7 ? 2.0 : 0.5;
+                
+                playMelodyNote(freq, duration);
+                
+                // UI 更新
+                document.getElementById('note-display').innerText = selection.note;
+                const logDiv = document.getElementById('log');
+                logDiv.innerHTML = `<div>${selection.note} on ${PROGRESSION[(currentChordIndex - 1 + 4) % 4].name}</div>` + logDiv.innerHTML;
+            } else {
+                document.getElementById('note-display').innerText = "...";
+            }
+
+            // 下一个音的时间 (0.2s ~ 1.5s 之间)
+            nextNoteTime = now + (Math.random() * 1.3 + 0.2);
+        }
+
+        requestAnimationFrame(tick);
+    }
+
+    // --- 启动 ---
+    const btn = document.getElementById('start-btn');
+    btn.addEventListener('click', () => {
+        btn.style.display = 'none';
+        document.getElementById('main-ui').style.opacity = 1;
+        startEngine();
+    });
+
+</script>
+</body>
+</html>

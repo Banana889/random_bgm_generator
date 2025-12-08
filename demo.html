@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Generative Ambient Guitar</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #00ffcc;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            background: transparent;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #00ffcc;
+            color: #1a1a1a;
+        }
+        #status { margin-top: 20px; font-size: 0.9rem; opacity: 0.8; }
+        .log-container {
+            margin-top: 20px;
+            height: 150px;
+            overflow: hidden;
+            text-align: center;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="start-btn">Start Ambient Session</button>
+    <div id="status">点击按钮开始生成...</div>
+    <div class="log-container" id="log"></div>
+
+<script>
+    // --- 1. 基础设置与乐理库 ---
+    
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let ctx;
+    
+    // C Major Pentatonic Scale (C 大调五声音阶: C, D, E, G, A)
+    // 这种音阶怎么瞎弹都不会难听，非常适合生成音乐
+    const NOTES = {
+        'C3': 130.81, 'D3': 146.83, 'E3': 164.81, 'G3': 196.00, 'A3': 220.00,
+        'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'G4': 392.00, 'A4': 440.00,
+        'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'G5': 783.99, 'A5': 880.00
+    };
+    
+    const SCALE_KEYS = Object.keys(NOTES);
+
+    // --- 2. 核心合成器 (The Instrument) ---
+    // 模拟一种类似 "电钢琴" 或 "吉他泛音" 的声音
+    
+    function playTone(freq, duration) {
+        if (!ctx) return;
+
+        const t = ctx.currentTime;
+
+        // 2.1 振荡器 (Oscillator) - 声音的源头
+        const osc = ctx.createOscillator();
+        osc.type = 'sine'; // 正弦波最干净，适合氛围音乐
+        osc.frequency.value = freq;
+
+        // 2.2 包络 (Envelope / Gain) - 控制音量变化
+        // 模拟拨弦：瞬间响度大(Attack)，然后慢慢消失(Decay)
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(0, t);
+        gainNode.gain.linearRampToValueAtTime(0.2, t + 0.05); // Attack: 50ms
+        gainNode.gain.exponentialRampToValueAtTime(0.001, t + duration); // Release: Long tail
+
+        // 2.3 连接节点
+        // Oscillator -> Gain -> DelayEffect -> Master -> Speakers
+        osc.connect(gainNode);
+        gainNode.connect(masterEffectInput); // 连接到效果器回路
+        
+        osc.start(t);
+        osc.stop(t + duration);
+    }
+
+    // --- 3. 效果器链 (The Pedalboard) ---
+    // 氛围音乐的灵魂在于 Delay (延时) 和 Reverb (混响)
+    
+    let masterEffectInput, masterOutput;
+
+    function setupEffects() {
+        masterEffectInput = ctx.createGain();
+        masterOutput = ctx.createGain();
+        masterOutput.gain.value = 0.5; // 总音量
+
+        // 创建 Delay 节点 (模拟吉他延时踏板)
+        const delay = ctx.createDelay();
+        delay.delayTime.value = 0.4; // 400ms 延时
+        
+        const feedback = ctx.createGain();
+        feedback.gain.value = 0.4; // 40% 的声音反馈回来 (Repeats)
+
+        // 效果器路由图:
+        // Input -> Output
+        //   |-> Delay -> Feedback -> Delay (形成循环) -> Output
+        
+        masterEffectInput.connect(masterOutput);      // 干声 (Dry)
+        masterEffectInput.connect(delay);             // 湿声 (Wet)
+        delay.connect(feedback);
+        feedback.connect(delay);
+        delay.connect(masterOutput);
+
+        masterOutput.connect(ctx.destination);
+    }
+
+    // --- 4. 生成逻辑 (The Brain) ---
+    // 这里就是你的 "AI" 吉他手
+    
+    let isPlaying = false;
+    let nextNoteTime = 0;
+
+    function scheduler() {
+        if (!isPlaying) return;
+
+        // 简单的 Lookahead 调度系统
+        // 如果下个音符的时间到了，就把它加入播放队列
+        while (nextNoteTime < ctx.currentTime + 0.1) {
+            scheduleNote();
+            // 决定下一个音符在多久之后 (Rhythm)
+            // 在 0.5秒 到 3秒 之间随机，制造 "Rubato" (自由速度) 感
+            const nextDelay = Math.random() * 2.5 + 0.5; 
+            nextNoteTime += nextDelay;
+        }
+        
+        // 保持循环检查
+        requestAnimationFrame(scheduler);
+    }
+
+    function scheduleNote() {
+        // 逻辑 A: 留白 (Rest)
+        // 30% 的概率不弹任何东西，让 Delay 的尾音飘一会儿
+        if (Math.random() < 0.3) {
+            log("... (rest) ...");
+            return; 
+        }
+
+        // 逻辑 B: 选音 (Note Selection)
+        // 完全随机从音阶里选一个音
+        const randomKey = SCALE_KEYS[Math.floor(Math.random() * SCALE_KEYS.length)];
+        const freq = NOTES[randomKey];
+
+        // 逻辑 C: 演奏 (Articulation)
+        // 随机音长，让声音有长有短
+        const duration = Math.random() * 2 + 1; // 1s ~ 3s
+
+        playTone(freq, duration);
+        log(`Playing: ${randomKey}`);
+    }
+
+    // --- UI 交互 ---
+    
+    function log(msg) {
+        const div = document.getElementById('log');
+        div.innerHTML = `<div>${msg}</div>` + div.innerHTML;
+    }
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+        if (isPlaying) return;
+        
+        ctx = new AudioContext();
+        setupEffects();
+        
+        isPlaying = true;
+        nextNoteTime = ctx.currentTime;
+        scheduler();
+        
+        document.getElementById('status').innerText = "正在演奏: C Major Pentatonic Ambient...";
+        document.getElementById('start-btn').style.display = 'none';
+    });
+
+</script>
+</body>
+</html>
