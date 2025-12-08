@@ -1,188 +1,141 @@
 class AudioEngine {
     constructor() {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        this.ctx = new AudioContext();
-        this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.value = 0.5;
-        this.masterGain.connect(this.ctx.destination);
+        // 1. 混响链 (Reverb Chain)
+        // Tone.js 的 Reverb 比卷积混响更灵活，且自带衰减控制
+        this.reverb = new Tone.Reverb({
+            decay: 4,
+            wet: 0.5,
+            preDelay: 0.2
+        }).toDestination(); // 连接到主输出
         
-        this.reverbNode = this.createReverb();
-        this.reverbNode.connect(this.masterGain);
+        // 必须调用 generate() 才能生效
+        this.reverb.generate();
 
-        this.currentPadOscillators = [];
-        
-        // Pad 配置 (已应用之前的优化)
-        this.padConfig = {
-            volume: 0.015,
-            waveform: 'triangle',
-            cutoff: 600,      // Low cutoff for background feel
-            attackTime: 2.0,
-            releaseTime: 0.5
-        };
-    }
-
-    createReverb() {
-        const convolver = this.ctx.createConvolver();
-        const rate = this.ctx.sampleRate;
-        const length = rate * 3;
-        const decay = 2.0;
-        const buffer = this.ctx.createBuffer(2, length, rate);
-        
-        for (let channel = 0; channel < 2; channel++) {
-            const data = buffer.getChannelData(channel);
-            for (let i = 0; i < length; i++) {
-                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+        // 2. 和弦合成器 (Pad Synth)
+        // 使用 PolySynth 支持复音，声音选用 "FatOscillator" (加厚锯齿波)
+        this.padSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: {
+                type: "fatsawtooth",
+                count: 3,
+                spread: 30
+            },
+            envelope: {
+                attack: 1,
+                decay: 0.5,
+                sustain: 1,
+                release: 2
             }
-        }
-        convolver.buffer = buffer;
-        return convolver;
+        }).connect(this.reverb);
+        
+        // 降低 Pad 音量，作为背景
+        this.padSynth.volume.value = -20; // dB
+
+        // 3. 旋律合成器 (Lead Synth)
+        // 使用 AMSynth (调幅合成)，声音更有金属感和动态
+        this.melodySynth = new Tone.AMSynth({
+            harmonicity: 3,
+            detune: 0,
+            oscillator: {
+                type: "sine"
+            },
+            envelope: {
+                attack: 0.01,
+                decay: 0.01,
+                sustain: 1,
+                release: 0.5
+            },
+            modulation: {
+                type: "square"
+            },
+            modulationEnvelope: {
+                attack: 0.5,
+                decay: 0,
+                sustain: 1,
+                release: 0.5
+            }
+        });
+        
+        // 加一个乒乓延时，让旋律在左右耳跳动
+        this.pingPong = new Tone.PingPongDelay("8n", 0.4).connect(this.reverb);
+        this.melodySynth.connect(this.pingPong);
+        this.melodySynth.volume.value = -10;
+
+        // 4. 鼓组 (Drums)
+        // 底鼓：MembraneSynth (专门做鼓的合成器)
+        this.kick = new Tone.MembraneSynth({
+            pitchDecay: 0.05,
+            octaves: 10,
+            oscillator: { type: "sine" },
+            envelope: {
+                attack: 0.001,
+                decay: 0.4,
+                sustain: 0.01,
+                release: 1.4,
+                attackCurve: "exponential"
+            }
+        }).toDestination();
+        this.kick.volume.value = -5;
+
+        // 镲片：MetalSynth (专门做金属打击乐)
+        this.hihat = new Tone.MetalSynth({
+            frequency: 200,
+            envelope: {
+                attack: 0.001,
+                decay: 0.1,
+                release: 0.01
+            },
+            harmonicity: 5.1,
+            modulationIndex: 32,
+            resonance: 4000,
+            octaves: 1.5
+        }).connect(this.reverb);
+        this.hihat.volume.value = -5; // 稍微小声点
     }
 
-    playPad(chord, time) { // 修改：增加 time 参数
-        const now = time || this.ctx.currentTime; // 修改：优先使用传入的精确时间
-        const { releaseTime, attackTime, volume, cutoff, waveform } = this.padConfig;
+    // --- 统一接口 ---
 
-        // 1. 清理旧和弦
-        this.currentPadOscillators.forEach(item => {
-            try {
-                item.gain.gain.cancelScheduledValues(now);
-                item.gain.gain.setValueAtTime(item.gain.gain.value, now);
-                item.gain.gain.linearRampToValueAtTime(0, now + releaseTime);
-                item.osc.stop(now + releaseTime + 0.2);
-            } catch(e) {}
-        });
-        this.currentPadOscillators = [];
+    playPad(chord, time) {
+        // Tone.js 接受音名数组 (e.g. ["C3", "E3", "G3"])
+        // 我们的 chord.tones 是 ["C", "E", "G"]，需要加上八度
+        // 这里简单处理：根音+八度
+        
+        // 释放之前的音 (如果有的话)
+        this.padSynth.releaseAll(time);
 
-        // 2. 生成新和弦频率
-        const freqs = [
-            FREQ[chord.root],
-            FREQ[chord.root] * 1.5,
-            FREQ[chord.root] * 2
+        const root = chord.root; // e.g. "C3"
+        const notes = [
+            root,
+            Tone.Frequency(root).transpose(7), // 五度
+            Tone.Frequency(root).transpose(12), // 八度
+            Tone.Frequency(root).transpose(16)  // 大三度(高八度)
         ];
 
-        freqs.forEach(f => {
-            if (!f) return; // Skip undefined freqs
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            const filter = this.ctx.createBiquadFilter();
-
-            osc.type = waveform;
-            osc.frequency.value = f;
-            osc.detune.value = (Math.random() * 10) - 5;
-
-            filter.type = 'lowpass';
-            filter.frequency.value = cutoff;
-
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(volume, now + attackTime);
-
-            osc.connect(filter);
-            filter.connect(gain);
-            gain.connect(this.reverbNode);
-
-            // 垃圾回收
-            osc.onended = () => {
-                try {
-                    osc.disconnect();
-                    filter.disconnect();
-                    gain.disconnect();
-                } catch(e) {}
-            };
-
-            osc.start(now);
-            this.currentPadOscillators.push({osc, gain});
-        });
+        // 触发攻击 (Attack)
+        // duration 设为 "1m" (1 measure) 或者更长，这里我们手动控制 release
+        this.padSynth.triggerAttack(notes, time);
+        this.padSynth.volume.value = -30;
     }
 
-    // 2.3 旋律合成器 (Lead Synth)
-    playMelodyNote(freq, duration, time) { // 修改：增加 time 参数
-        if (!freq) return;
-        
-        const t = time || this.ctx.currentTime; // 修改：优先使用传入的精确时间
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, t);
-
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.2, t + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
-
-        const panner = this.ctx.createStereoPanner();
-        panner.pan.value = (Math.random() * 2) - 1;
-
-        osc.connect(gain);
-        gain.connect(panner);
-        panner.connect(this.reverbNode);
-
-        osc.start(t);
-        osc.stop(t + duration);
-        
-        osc.onended = () => {
-            osc.disconnect();
-            gain.disconnect();
-            panner.disconnect();
-        };
+    playMelodyNote(freq, duration, time) {
+        // Tone.js 可以直接接受频率数字
+        this.melodySynth.triggerAttackRelease(freq, duration, time);
     }
-    
-
-    // --- 新增：鼓组合成器 ---
 
     playKick(time) {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        
-        // 频率快速下潜 (50Hz -> 0.01Hz) 模拟鼓皮撞击
-        osc.frequency.setValueAtTime(120, time);
-        osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
-        
-        // 音量快速衰减
-        gain.gain.setValueAtTime(0.8, time);
-        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
-        
-        osc.connect(gain);
-        gain.connect(this.masterGain);
-        
-        osc.start(time);
-        osc.stop(time + 0.5);
+        // C1 是标准的底鼓音高
+        this.kick.triggerAttackRelease("C1", "8n", time);
     }
 
     playHiHat(time) {
-        // 使用白噪音生成镲片声
-        const bufferSize = this.ctx.sampleRate * 0.1; // 0.1秒
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            data[i] = Math.random() * 2 - 1;
-        }
-
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = buffer;
-        
-        // 高通滤波器，只保留高频
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'highpass';
-        filter.frequency.value = 5000;
-
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.2, time); // 音量稍小
-        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05); // 极短的衰减
-        
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.masterGain);
-        
-        noise.start(time);
+        // 触发短促的噪音
+        this.hihat.triggerAttackRelease("32n", time, 0.3); // velocity 0.3
     }
     
-    resume() {
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume();
-        }
+    async resume() {
+        await Tone.start();
     }
     
     getCurrentTime() {
-        return this.ctx.currentTime;
+        return Tone.now();
     }
 }
