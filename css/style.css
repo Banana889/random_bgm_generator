@@ -1,0 +1,74 @@
+body {
+    background-color: #222;
+    color: #ff9d00;
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.controls-top {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    background: #333;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #555;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+label {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-bottom: 5px;
+}
+
+select, input {
+    background: #222;
+    color: #ff9d00;
+    border: 1px solid #ff9d00;
+    padding: 5px;
+    font-family: inherit;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    background: transparent;
+    border: 2px solid #ff9d00;
+    color: #ff9d00;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+button:hover { background: #ff9d00; color: #222; }
+
+.display-area {
+    display: flex;
+    gap: 40px;
+    text-align: center;
+    opacity: 0.3;
+    transition: opacity 1s;
+}
+
+.chord-box {
+    border: 1px solid #555;
+    padding: 20px;
+    width: 200px;
+    background: rgba(0,0,0,0.2);
+}
+
+h1 { font-size: 3rem; margin: 0; }
+h3 { color: #888; margin-top: 5px; font-size: 0.9rem; }
+#log { font-size: 0.8rem; color: #666; height: 100px; overflow: hidden; margin-top: 20px; width: 400px; text-align: center;}

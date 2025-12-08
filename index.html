@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Generative Guitar Station</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="controls-top">
+        <div class="control-group">
+            <label>MODE / SCALE</label>
+            <select id="scale-select">
+                <!-- 动态生成 -->
+            </select>
+        </div>
+        <div class="control-group">
+            <label>TIME SIG</label>
+            <select id="time-sig-select">
+                <option value="4">4/4</option>
+                <option value="3">3/4</option>
+                <option value="6">6/8</option>
+            </select>
+        </div>
+        <!-- 鼓组开关 -->
+        <div class="control-group">
+            <label>DRUMS</label>
+            <input type="checkbox" id="drums-toggle">
+        </div>
+        <div class="control-group">
+            <label>BPM: <span id="bpm-val">80</span></label>
+            <input type="range" id="bpm-slider" min="40" max="160" value="80">
+        </div>
+    </div>
+
+    <div class="display-area" id="main-ui">
+        <div class="chord-box">
+            <h3>CURRENT CHORD</h3>
+            <h1 id="chord-display">--</h1>
+            <div id="chord-detail">Waiting...</div>
+        </div>
+        <div class="chord-box">
+            <h3>MELODY NOTE</h3>
+            <h1 id="note-display">--</h1>
+        </div>
+    </div>
+
+    <button id="start-btn">Start Session</button>
+    
+    <div id="log"></div>
+
+    <!-- 按顺序加载脚本 -->
+    <script src="js/data.js"></script>
+    <script src="js/synth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
