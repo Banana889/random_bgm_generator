@@ -6,16 +6,21 @@ const state = {
     currentChordIndex: 0,
     lastPlayedNoteIndex: 7,
     isPlaying: false,
-    isDrumsEnabled: false, // 新增
-    currentBeat: 0         // 新增：当前是第几拍 (0, 1, 2, 3...)
+    isDrumsEnabled: false, 
+    currentBeat: 0,
+    
+    // --- 新增：乐句与动机状态 ---
+    phraseState: 'PLAYING', // 'PLAYING' | 'RESTING'
+    phraseBeatsRemaining: 16, // 当前乐句还剩多少拍
+    currentMotif: [], // 当前的节奏型 (数组，例如 [1, 0.5, 0.5])
+    motifIndex: 0 // 当前播放到节奏型的第几步
 };
 
 // --- 初始化 ---
 let engine; 
-// 移除独立的 nextNoteTime 和 nextChordTime，统一使用 nextBeatTime
 let nextBeatTime = 0; 
-let melodyBusyUntil = 0; // 新增：旋律忙碌截止时间，用于处理长音符
-let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...)
+let melodyBusyUntil = 0; // 新增：旋律忙碌截止时间，用于处理长音符 
+let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...) 
 
 // 填充下拉菜单
 const scaleSelect = document.getElementById('scale-select');
@@ -64,21 +69,66 @@ function pickNextNote() {
     return candidates[0];
 }
 
+// --- 新增：生成节奏动机 (Rhythmic Motif) ---
+function generateNewMotif() {
+    // 生成一个长度为 1小节 或 2小节 的节奏型
+    const pattern = [];
+    let remaining = 4.0; // 凑满 4 拍
+    
+    const possibleDurations = [0.5, 0.5, 1.0, 1.0, 2.0];
+    
+    while (remaining > 0) {
+        // 随机选一个时值，但不能超过剩余时间
+        let dur = possibleDurations[Math.floor(Math.random() * possibleDurations.length)];
+        if (dur > remaining) dur = remaining; // 截断
+        
+        pattern.push(dur);
+        remaining -= dur;
+    }
+    
+    return pattern;
+}
+
+// --- 新增：乐句控制逻辑 ---
+function updatePhraseState() {
+    // 如果当前乐句/休息结束了
+    if (state.phraseBeatsRemaining <= 0) {
+        if (state.phraseState === 'PLAYING') {
+            // 演奏结束，进入休息 (Rest)
+            // 休息 2 到 4 拍
+            state.phraseState = 'RESTING';
+            state.phraseBeatsRemaining = [2, 4][Math.floor(Math.random() * 2)];
+            
+            // UI 反馈
+            document.getElementById('note-display').innerText = "(Rest)";
+            
+        } else {
+            // 休息结束，开始新乐句 (Phrase)
+            state.phraseState = 'PLAYING';
+            // 乐句长度：8拍 或 12拍 (2-3小节)
+            state.phraseBeatsRemaining = [8, 12, 16][Math.floor(Math.random() * 3)];
+            
+            // *** 关键：新乐句开始时，生成一个新的节奏型 ***
+            state.currentMotif = generateNewMotif();
+            state.motifIndex = 0;
+        }
+    }
+}
+
 function tick() {
     if (!state.isPlaying) return;
 
     const now = engine.getCurrentTime();
     const beatDuration = 60.0 / state.bpm; 
-    const stepDuration = beatDuration / 2; // 最小步进改为半拍
+    const stepDuration = beatDuration / 2; 
     
     // --- 统一调度核心 (The Grid) ---
-    // 我们只看"下一个半拍"什么时候来
     while (nextBeatTime < now + 0.1) {
         
-        const isOnBeat = stepIndex % 2 === 0; // 是否是整拍
+        const isOnBeat = stepIndex % 2 === 0; 
         const currentBeatInBar = Math.floor(stepIndex / 2) % state.beatsPerBar;
 
-        // 1. 鼓组 (Drums) - 只在整拍触发
+        // 1. 鼓组 (Drums)
         if (state.isDrumsEnabled && isOnBeat) {
             if (currentBeatInBar === 0) {
                 engine.playKick(nextBeatTime);
@@ -87,53 +137,63 @@ function tick() {
             }
         }
 
-        // 2. 和弦 (Chords) - 只在小节第一拍触发
+        // 2. 和弦 (Chords)
         if (currentBeatInBar === 0 && isOnBeat) {
             const preset = PRESETS[state.currentPresetKey];
             const chord = preset.progression[state.currentChordIndex];
             
-            // UI 更新
-            // 注意：为了避免UI闪烁，这里可以加个简单的防抖，或者直接更新
             document.getElementById('chord-display').innerText = chord.name;
             document.getElementById('chord-detail').innerText = `Notes: ${chord.tones.join("-")}`;
             
-            // Audio: 传入精确的 nextBeatTime
             engine.playPad(chord, nextBeatTime);
 
-            // 准备下一个和弦索引
+// 准备下一个和弦索引
             state.currentChordIndex = (state.currentChordIndex + 1) % preset.progression.length;
         }
 
-        // 3. 旋律 (Melody) - 支持切分音和长音符
-        // 检查旋律是否空闲 (使用小量 epsilon 避免浮点误差)
+        // 3. 旋律 (Melody) - 乐句化与动机化
         if (nextBeatTime >= melodyBusyUntil - 0.001) {
-            // 50% 概率触发
-            if (Math.random() > 0.3) {
+            
+            // 只有在半拍点上才尝试更新乐句状态 (避免切分音中间打断)
+            // 这里简化处理：每次尝试播放音符前，检查乐句状态
+            
+            if (state.phraseState === 'RESTING') {
+                // 休息中，什么都不做，只消耗时间
+                melodyBusyUntil = nextBeatTime + stepDuration;
+                state.phraseBeatsRemaining -= 0.5; // 消耗半拍
+                updatePhraseState(); // 检查是否休息完了
+                
+            } else {
+                // --- 演奏状态 ---
+                
+                // 1. 获取当前动机的下一个时值
+                if (state.currentMotif.length === 0) state.currentMotif = generateNewMotif();
+                
+                const durationInBeats = state.currentMotif[state.motifIndex];
+                const durationSeconds = beatDuration * durationInBeats;
+
+                // 2. 选音 (Pitch) - 依然使用加权随机，保证和声匹配
                 const selection = pickNextNote();
                 state.lastPlayedNoteIndex = selection.index;
-                
                 const freq = FREQ[selection.note];
-                
-                // 随机时值：0.5, 1, 2 拍
-                const durationOptions = [0.5, 0.5, 1, 1, 2];
-                const beats = durationOptions[Math.floor(Math.random() * durationOptions.length)];
-                const duration = beatDuration * beats;
 
-                // Audio: 传入精确的 nextBeatTime
-                engine.playMelodyNote(freq, duration, nextBeatTime);
+                // 3. 播放
+                engine.playMelodyNote(freq, durationSeconds, nextBeatTime);
                 
-                // 标记忙碌时间，在此期间不会生成新音符
-                melodyBusyUntil = nextBeatTime + duration;
-                
-                // UI 更新
+                // UI
                 document.getElementById('note-display').innerText = selection.note;
                 const logDiv = document.getElementById('log');
-                // 简单的日志
-                logDiv.innerHTML = `<div>${selection.note} (${beats} beats)</div>` + logDiv.innerHTML;
-            } else {
-                document.getElementById('note-display').innerText = "...";
-                // 如果决定休止，至少休止一个半拍
-                melodyBusyUntil = nextBeatTime + stepDuration;
+                logDiv.innerHTML = `<div>${selection.note} (${durationInBeats})</div>` + logDiv.innerHTML;
+
+                // 4. 推进状态
+                melodyBusyUntil = nextBeatTime + durationSeconds;
+                
+                // 推进动机索引 (循环播放这个节奏型)
+                state.motifIndex = (state.motifIndex + 1) % state.currentMotif.length;
+                
+                // 消耗乐句剩余时间
+                state.phraseBeatsRemaining -= durationInBeats;
+                updatePhraseState(); // 检查乐句是否结束
             }
         }
 
