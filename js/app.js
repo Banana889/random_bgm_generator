@@ -14,6 +14,8 @@ const state = {
 let engine; 
 // 移除独立的 nextNoteTime 和 nextChordTime，统一使用 nextBeatTime
 let nextBeatTime = 0; 
+let melodyBusyUntil = 0; // 新增：旋律忙碌截止时间，用于处理长音符
+let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...)
 
 // 填充下拉菜单
 const scaleSelect = document.getElementById('scale-select');
@@ -67,14 +69,18 @@ function tick() {
 
     const now = engine.getCurrentTime();
     const beatDuration = 60.0 / state.bpm; 
+    const stepDuration = beatDuration / 2; // 最小步进改为半拍
     
     // --- 统一调度核心 (The Grid) ---
-    // 我们只看"下一拍"什么时候来，到了时间就触发所有该响的东西
+    // 我们只看"下一个半拍"什么时候来
     while (nextBeatTime < now + 0.1) {
         
-        // 1. 鼓组 (Drums)
-        if (state.isDrumsEnabled) {
-            if (state.currentBeat === 0) {
+        const isOnBeat = stepIndex % 2 === 0; // 是否是整拍
+        const currentBeatInBar = Math.floor(stepIndex / 2) % state.beatsPerBar;
+
+        // 1. 鼓组 (Drums) - 只在整拍触发
+        if (state.isDrumsEnabled && isOnBeat) {
+            if (currentBeatInBar === 0) {
                 engine.playKick(nextBeatTime);
             } else {
                 engine.playHiHat(nextBeatTime);
@@ -82,7 +88,7 @@ function tick() {
         }
 
         // 2. 和弦 (Chords) - 只在小节第一拍触发
-        if (state.currentBeat === 0) {
+        if (currentBeatInBar === 0 && isOnBeat) {
             const preset = PRESETS[state.currentPresetKey];
             const chord = preset.progression[state.currentChordIndex];
             
@@ -98,32 +104,43 @@ function tick() {
             state.currentChordIndex = (state.currentChordIndex + 1) % preset.progression.length;
         }
 
-        // 3. 旋律 (Melody) - 每一拍都有机会触发 (暂时只做整拍)
-        // 50% 概率触发，或者你可以调高一点
-        if (Math.random() > 0.3) {
-            const selection = pickNextNote();
-            state.lastPlayedNoteIndex = selection.index;
-            
-            const freq = FREQ[selection.note];
-            
-            // 固定时值：1拍 (暂时不加切分)
-            const duration = beatDuration; 
+        // 3. 旋律 (Melody) - 支持切分音和长音符
+        // 检查旋律是否空闲 (使用小量 epsilon 避免浮点误差)
+        if (nextBeatTime >= melodyBusyUntil - 0.001) {
+            // 50% 概率触发
+            if (Math.random() > 0.3) {
+                const selection = pickNextNote();
+                state.lastPlayedNoteIndex = selection.index;
+                
+                const freq = FREQ[selection.note];
+                
+                // 随机时值：0.5, 1, 2 拍
+                const durationOptions = [0.5, 0.5, 1, 1, 2];
+                const beats = durationOptions[Math.floor(Math.random() * durationOptions.length)];
+                const duration = beatDuration * beats;
 
-            // Audio: 传入精确的 nextBeatTime
-            engine.playMelodyNote(freq, duration, nextBeatTime);
-            
-            // UI 更新
-            document.getElementById('note-display').innerText = selection.note;
-            const logDiv = document.getElementById('log');
-            // 简单的日志
-            logDiv.innerHTML = `<div>${selection.note}</div>` + logDiv.innerHTML;
-        } else {
-            document.getElementById('note-display').innerText = "...";
+                // Audio: 传入精确的 nextBeatTime
+                engine.playMelodyNote(freq, duration, nextBeatTime);
+                
+                // 标记忙碌时间，在此期间不会生成新音符
+                melodyBusyUntil = nextBeatTime + duration;
+                
+                // UI 更新
+                document.getElementById('note-display').innerText = selection.note;
+                const logDiv = document.getElementById('log');
+                // 简单的日志
+                logDiv.innerHTML = `<div>${selection.note} (${beats} beats)</div>` + logDiv.innerHTML;
+            } else {
+                document.getElementById('note-display').innerText = "...";
+                // 如果决定休止，至少休止一个半拍
+                melodyBusyUntil = nextBeatTime + stepDuration;
+            }
         }
 
         // --- 推进时间 ---
-        nextBeatTime += beatDuration;
-        state.currentBeat = (state.currentBeat + 1) % state.beatsPerBar;
+        nextBeatTime += stepDuration;
+        stepIndex++;
+        state.currentBeat = Math.floor(stepIndex / 2) % state.beatsPerBar;
     }
 
     requestAnimationFrame(tick);
@@ -142,6 +159,8 @@ document.getElementById('start-btn').addEventListener('click', function() {
     // 立即对齐时间
     const now = engine.getCurrentTime();
     nextBeatTime = now + 0.1; // 稍微延迟一点点开始，给音频引擎缓冲
+    melodyBusyUntil = nextBeatTime; // 重置旋律状态
+    stepIndex = 0; // 重置步进
     state.currentBeat = 0;
     state.currentChordIndex = 0; // 重置和弦
     
