@@ -146,6 +146,13 @@ function tick() {
     const beatDuration = 60.0 / state.bpm; 
     const stepDuration = beatDuration / 2; 
     
+    // --- 新增：后台重同步逻辑 (Resync) ---
+    // 如果 nextBeatTime 落后当前时间超过 0.5秒 (说明浏览器可能在后台被降频了)
+    // 我们就不补齐中间的音符了，直接"快进"到当前时间，避免报错和爆音
+    if (nextBeatTime < now - 0.5) {
+        nextBeatTime = now;
+    }
+
     // --- 统一调度核心 (The Grid) ---
     while (nextBeatTime < now + 0.1) {
         

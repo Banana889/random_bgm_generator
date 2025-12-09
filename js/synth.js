@@ -63,24 +63,41 @@ class AudioEngine {
         // 4. 鼓组 (Drums)
         // 底鼓：MembraneSynth (专门做鼓的合成器)
         this.kick = new Tone.MembraneSynth({
-            pitchDecay: 0.05,
-            octaves: 10,
+            pitchDecay: 0.08,
+            octaves: 6,               // 进一步降低八度变化
             oscillator: { type: "sine" },
             envelope: {
                 attack: 0.001,
-                decay: 0.4,
-                sustain: 0.01,
-                release: 1.4,
-                attackCurve: "exponential"
+                decay: 0.5,
+                sustain: 0.03,
+                release: 0.7,
+                attackCurve: "sine"   // 更柔和的起音曲线
             }
-        }).toDestination();
-        this.kick.volume.value = -5;
+        });
+        
+        // 添加低通滤波器，切掉刺耳的高频
+        const filter = new Tone.Filter({
+            type: "lowpass",
+            frequency: 120,           // 只保留120Hz以下低频
+            rolloff: -12,
+            Q: 1
+        });
+        
+        // 添加轻微饱和/失真，增加谐波温暖感
+        const saturation = new Tone.Distortion({
+            distortion: 0.2,          // 轻微失真，不要超过0.3
+            wet: 0.3                  // 混合比例30%
+        });
+        
+        // 串联效果器
+        this.kick.chain(saturation, filter, Tone.Destination);
+        this.kick.volume.value = -6;
 
         // 镲片：MetalSynth (专门做金属打击乐)
         this.hihat = new Tone.MetalSynth({
             frequency: 200,
             envelope: {
-                attack: 0.001,
+                attack: 0.005,
                 decay: 0.1,
                 release: 0.01
             },
@@ -88,8 +105,8 @@ class AudioEngine {
             modulationIndex: 32,
             resonance: 4000,
             octaves: 1.5
-        }).connect(this.reverb);
-        this.hihat.volume.value = -5; // 稍微小声点
+        }).toDestination();
+        this.hihat.volume.value = -10; // 稍微小声点
     }
 
     // 统一接口
@@ -163,12 +180,13 @@ class AudioEngine {
 
     playKick(time) {
         // C1 是标准的底鼓音高
-        this.kick.triggerAttackRelease("C1", "8n", time);
+        this.kick.triggerAttackRelease(60, "8n", time);
     }
 
     playHiHat(time) {
+        console.log("Playing hi-hat at time:", time);
         // 触发短促的噪音
-        this.hihat.triggerAttackRelease("32n", time, 0.3); // velocity 0.3
+        this.hihat.triggerAttackRelease(200, "32n", time, 0.1); // velocity 0.3
     }
     
     async resume() {
