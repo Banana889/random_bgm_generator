@@ -275,6 +275,19 @@ document.getElementById('drums-toggle').addEventListener('change', (e) => {
     state.isDrumsEnabled = e.target.checked;
 });
 
+// 新增：雨声开关监听
+document.getElementById('rain-toggle').addEventListener('change', (e) => {
+    const isEnabled = e.target.checked;
+    
+    // 1. 控制音频
+    if (engine) {
+        engine.toggleRain(isEnabled);
+    }
+    
+    // 2. 控制视觉
+    visuals.toggle(isEnabled);
+});
+
 // BPM Control
 const bpmSlider = document.getElementById('bpm-slider');
 const bpmVal = document.getElementById('bpm-val');
