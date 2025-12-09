@@ -82,14 +82,31 @@ function updatePhraseState() {
     // 如果当前乐句/休息结束了
     if (state.phraseBeatsRemaining <= 0) {
         if (state.phraseState === 'PLAYING') {
-            // 演奏结束，进入休息 (Rest)
-            // 休息 2 到 4 拍
-            state.phraseState = 'RESTING';
-            state.phraseBeatsRemaining = [2, 4][Math.floor(Math.random() * 2)];
             
-            // UI 反馈
-            document.getElementById('note-display').innerText = "(Rest)";
+            const preset = PRESETS[state.currentPresetKey];
             
+            // 获取上一个演奏音符的音名 (去掉八度数字)
+            // 注意：lastPlayedNoteIndex 可能越界，加个保护
+            const lastNote = preset.scale[state.lastPlayedNoteIndex] || "C4";
+            const pitchClass = lastNote.slice(0, -1); // e.g. "C4" -> "C"
+
+            // 检查是否是稳定音 (如果 data.js 没配 stableNotes，默认允许休息)
+            const isStable = preset.stableNotes ? preset.stableNotes.includes(pitchClass) : true;
+
+            if (isStable) {
+                // 是稳定音，允许休息
+                state.phraseState = 'RESTING';
+                state.phraseBeatsRemaining = [2, 4][Math.floor(Math.random() * 2)];
+                
+                // UI 反馈
+                document.getElementById('note-display').innerText = "(Rest)";
+                console.log(`Phrase resolved on ${lastNote}. Resting.`);
+            } else {
+                // 不是稳定音，强行延长乐句，寻找解决
+                // 延长 1 到 2 拍，给 pick_gohome 更多机会去解决
+                state.phraseBeatsRemaining += 2; 
+                console.log(`Unstable note ${lastNote}. Extending phrase to find resolution...`);
+            }
         } else {
             // 休息结束，开始新乐句 (Phrase)
             state.phraseState = 'PLAYING';
