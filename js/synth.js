@@ -97,15 +97,7 @@ class AudioEngine {
         // 释放之前的音 (如果有的话)
         this.padSynth.releaseAll(time);
 
-        /// 这根本不对吧。应该在data查表
-        const root = chord.root; 
-        // 构建和弦音符：根音 + 五度 + 八度 + 十度(大三度)
-        const notes = [
-            root,
-            Tone.Frequency(root).transpose(7), 
-            Tone.Frequency(root).transpose(12), 
-            Tone.Frequency(root).transpose(16)  
-        ];
+        const notes = this.getChordNotes(chord);
         console.log("Playing chord:", chord.name, "Notes:", notes, "Style:", style);
 
         // 根据 style 决定触发方式
@@ -127,6 +119,41 @@ class AudioEngine {
                 this.padSynth.triggerAttack(notes, time);
                 break;
         }
+        this.padSynth.volume.value = -30;
+    }
+
+    // 辅助函数：根据和弦名称获取具体音符频率
+    getChordNotes(chord) {
+        const root = chord.root;
+        
+        // 定义常见和弦类型的音程关系 (半音偏移)
+        // 可以在这里扩展更多类型
+        const INTERVALS = {
+            "maj7": [0, 4, 7, 11],      // 大七
+            "m7":   [0, 3, 7, 10],      // 小七
+            "7":    [0, 4, 7, 10],      // 属七
+            "maj9": [0, 4, 7, 11, 14],  // 大九
+            "m9":   [0, 3, 7, 10, 14],  // 小九
+            "9":    [0, 4, 7, 10, 14],  // 属九
+            "6":    [0, 4, 7, 9],       // 大六
+            "m6":   [0, 3, 7, 9],       // 小六
+            "dim":  [0, 3, 6],          // 减三
+            "aug":  [0, 4, 8]           // 增三
+        };
+
+        let intervals = [0, 7, 12]; // 默认: 根音+五度+八度 (Power Chord)
+
+        // 简单的名称匹配逻辑 (注意顺序：先匹配长的后缀)
+        const name = chord.name;
+        if (name.includes("maj9")) intervals = INTERVALS["maj9"];
+        else if (name.includes("m9")) intervals = INTERVALS["m9"];
+        else if (name.includes("maj7")) intervals = INTERVALS["maj7"];
+        else if (name.includes("m7")) intervals = INTERVALS["m7"];
+        else if (name.includes("7")) intervals = INTERVALS["7"];
+        else if (name.includes("6")) intervals = INTERVALS["6"];
+        
+        // 转换 intervals 为频率
+        return intervals.map(semitone => Tone.Frequency(root).transpose(semitone));
     }
 
     playMelodyNote(freq, duration, time) {
