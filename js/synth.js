@@ -92,28 +92,41 @@ class AudioEngine {
         this.hihat.volume.value = -5; // 稍微小声点
     }
 
-    // --- 统一接口 ---
-
-    playPad(chord, time) {
-        // Tone.js 接受音名数组 (e.g. ["C3", "E3", "G3"])
-        // 我们的 chord.tones 是 ["C", "E", "G"]，需要加上八度
-        // 这里简单处理：根音+八度
-        
+    // 统一接口
+    playPad(chord, time, style = "block") {
         // 释放之前的音 (如果有的话)
         this.padSynth.releaseAll(time);
 
-        const root = chord.root; // e.g. "C3"
+        /// 这根本不对吧。应该在data查表
+        const root = chord.root; 
+        // 构建和弦音符：根音 + 五度 + 八度 + 十度(大三度)
         const notes = [
             root,
-            Tone.Frequency(root).transpose(7), // 五度
-            Tone.Frequency(root).transpose(12), // 八度
-            Tone.Frequency(root).transpose(16)  // 大三度(高八度)
+            Tone.Frequency(root).transpose(7), 
+            Tone.Frequency(root).transpose(12), 
+            Tone.Frequency(root).transpose(16)  
         ];
+        console.log("Playing chord:", chord.name, "Notes:", notes, "Style:", style);
 
-        // 触发攻击 (Attack)
-        // duration 设为 "1m" (1 measure) 或者更长，这里我们手动控制 release
-        this.padSynth.triggerAttack(notes, time);
-        this.padSynth.volume.value = -30;
+        // 根据 style 决定触发方式
+        switch (style) {
+            case "strum": // 扫弦：模拟吉他，快速依次触发 (间隔 50ms)
+                notes.forEach((note, i) => {
+                    this.padSynth.triggerAttack(note, time + i * time / 8);
+                });
+                break;
+            
+            case "arpeggio": // 琶音：较慢的依次触发 (间隔 150ms)
+                notes.forEach((note, i) => {
+                    this.padSynth.triggerAttack(note, time + i * time / 4);
+                });
+                break;
+
+            case "block": // 柱状和弦：同时触发
+            default:
+                this.padSynth.triggerAttack(notes, time);
+                break;
+        }
     }
 
     playMelodyNote(freq, duration, time) {
