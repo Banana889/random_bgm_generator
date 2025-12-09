@@ -57,43 +57,6 @@ function getNextChordKey(currentKey, graph) {
     return keys[0]; // Fallback
 }
 
-function getNoteWeight(noteName, noteIndex, chord) {
-    let weight = 10;
-    const pitchClass = noteName.slice(0, -1);
-    
-    // 1. 和声匹配 (使用传入的 chord 对象)
-    if (chord && chord.tones.includes(pitchClass)) weight += 50;
-
-    // 2. 物理距离
-    const distance = Math.abs(noteIndex - state.lastPlayedNoteIndex);
-    if (distance === 0) weight -= 5;
-    if (distance > 4) weight -= 20;
-    if (distance > 7) weight -= 100;
-
-    return Math.max(0, weight);
-}
-
-function pickNextNote() {
-    const preset = PRESETS[state.currentPresetKey];
-    // 使用当前正在播放的和弦对象
-    const currentChord = state.playingChord; 
-    const scale = preset.scale;
-
-    let weightSum = 0;
-    const candidates = scale.map((note, index) => {
-        const w = getNoteWeight(note, index, currentChord);
-        weightSum += w;
-        return { note, index, weight: w };
-    });
-
-    let r = Math.random() * weightSum;
-    for (let item of candidates) {
-        r -= item.weight;
-        if (r <= 0) return item;
-    }
-    return candidates[0];
-}
-
 // --- 新增：生成节奏动机 (Rhythmic Motif) ---
 function generateNewMotif() {
     // 生成一个长度为 1小节 或 2小节 的节奏型
@@ -199,7 +162,7 @@ function tick() {
 
         // 3. 旋律 (Melody) - 乐句化与动机化
         if (nextBeatTime >= melodyBusyUntil - 0.001) {
-            
+
             // 只有在半拍点上才尝试更新乐句状态 (避免切分音中间打断)
             // 这里简化处理：每次尝试播放音符前，检查乐句状态
             
@@ -218,8 +181,10 @@ function tick() {
                 const durationInBeats = state.currentMotif[state.motifIndex];
                 const durationSeconds = beatDuration * durationInBeats;
 
-                // 2. 选音 (Pitch) - 依然使用加权随机，保证和声匹配
-                const selection = pickNextNote();
+                // 2. 选音 (Pitch) - 修改：调用 NextNote 模块
+                const preset = PRESETS[state.currentPresetKey];
+                const selection = NextNote.pick_gohome(preset, state.playingChord, state.lastPlayedNoteIndex);
+                
                 state.lastPlayedNoteIndex = selection.index;
                 const freq = FREQ[selection.note];
 
