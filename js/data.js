@@ -14,12 +14,12 @@ const PRESETS = {
         startChord: "I",
         // 定义该调式内可用的和弦节点
         chords: {
-            "I":   { name: "Cmaj7", root: "C3", tones: ["C", "E", "G", "B"] },
-            "ii":  { name: "Dm7",   root: "D3", tones: ["D", "F", "A", "C"] },
+            "I":   { name: "Cmaj7", root: "C4", tones: ["C", "E", "G", "B"] },
+            "ii":  { name: "Dm7",   root: "D4", tones: ["D", "F", "A", "C"] },
             "iii": { name: "Em7",   root: "E3", tones: ["E", "G", "B", "D"] },
             "IV":  { name: "Fmaj7", root: "F3", tones: ["F", "A", "C", "E"] },
-            "V":   { name: "G7",    root: "G2", tones: ["G", "B", "D", "F"] },
-            "vi":  { name: "Am7",   root: "A2", tones: ["A", "C", "E", "G"] }
+            "V":   { name: "G7",    root: "G3", tones: ["G", "B", "D", "F"] },
+            "vi":  { name: "Am7",   root: "A3", tones: ["A", "C", "E", "G"] }
         },
         // 定义和弦转移图 (权重越大，跳转概率越高)
         graph: {
