@@ -3,7 +3,11 @@ const state = {
     bpm: 80,
     beatsPerBar: 4, 
     currentPresetKey: 'c_major',
-    currentChordIndex: 0,
+    
+    // 修改：不再使用 index，而是使用 Key 和 对象
+    currentChordKey: null, // e.g. "I", "vi"
+    playingChord: null,    // 当前正在响的和弦对象 (用于旋律匹配)
+    
     lastPlayedNoteIndex: 7,
     isPlaying: false,
     isDrumsEnabled: false, 
@@ -33,12 +37,31 @@ Object.keys(PRESETS).forEach(key => {
 
 // --- 核心逻辑 ---
 
+// 新增：基于权重的图游走算法
+function getNextChordKey(currentKey, graph) {
+    const transitions = graph[currentKey];
+    if (!transitions) return currentKey; // 如果没有定义去向，保持不变
+
+    // 1. 计算总权重
+    const keys = Object.keys(transitions);
+    let sum = 0;
+    keys.forEach(k => sum += transitions[k]);
+    
+    // 2. 随机选择
+    let r = Math.random() * sum;
+    for (let k of keys) {
+        r -= transitions[k];
+        if (r <= 0) return k;
+    }
+    return keys[0]; // Fallback
+}
+
 function getNoteWeight(noteName, noteIndex, chord) {
     let weight = 10;
     const pitchClass = noteName.slice(0, -1);
     
-    // 1. 和声匹配
-    if (chord.tones.includes(pitchClass)) weight += 50;
+    // 1. 和声匹配 (使用传入的 chord 对象)
+    if (chord && chord.tones.includes(pitchClass)) weight += 50;
 
     // 2. 物理距离
     const distance = Math.abs(noteIndex - state.lastPlayedNoteIndex);
@@ -51,7 +74,8 @@ function getNoteWeight(noteName, noteIndex, chord) {
 
 function pickNextNote() {
     const preset = PRESETS[state.currentPresetKey];
-    const currentChord = preset.progression[state.currentChordIndex];
+    // 使用当前正在播放的和弦对象
+    const currentChord = state.playingChord; 
     const scale = preset.scale;
 
     let weightSum = 0;
@@ -137,18 +161,32 @@ function tick() {
             }
         }
 
-        // 2. 和弦 (Chords)
+        // 2. 和弦 (Chords) - 只在小节第一拍触发
         if (currentBeatInBar === 0 && isOnBeat) {
             const preset = PRESETS[state.currentPresetKey];
-            const chord = preset.progression[state.currentChordIndex];
             
+            // 初始化 (如果是第一次播放)
+            if (!state.currentChordKey) {
+                state.currentChordKey = preset.startChord;
+            }
+
+            // 获取当前和弦数据
+            const chord = preset.chords[state.currentChordKey];
+            state.playingChord = chord; // 记录下来给旋律用
+            
+            // UI 更新
             document.getElementById('chord-display').innerText = chord.name;
             document.getElementById('chord-detail').innerText = `Notes: ${chord.tones.join("-")}`;
             
-            engine.playPad(chord, nextBeatTime);
+            // Audio
+            // 随机选择演奏方式：大部分时候是柱状(block)，偶尔扫弦(strum)或琶音(arpeggio)
+            const styles = ["block", "block", "block", "strum", "arpeggio"];
+            const style = styles[Math.floor(Math.random() * styles.length)];
+            
+            engine.playPad(chord, nextBeatTime, style);
 
-// 准备下一个和弦索引
-            state.currentChordIndex = (state.currentChordIndex + 1) % preset.progression.length;
+            // *** 关键：计算下一个和弦 (Graph Walk) ***
+            state.currentChordKey = getNextChordKey(state.currentChordKey, preset.graph);
         }
 
         // 3. 旋律 (Melody) - 乐句化与动机化
@@ -183,7 +221,10 @@ function tick() {
                 // UI
                 document.getElementById('note-display').innerText = selection.note;
                 const logDiv = document.getElementById('log');
-                logDiv.innerHTML = `<div>${selection.note} (${durationInBeats})</div>` + logDiv.innerHTML;
+                
+                // 获取当前和弦名称用于日志
+                const chordName = state.playingChord ? state.playingChord.name : "--";
+                logDiv.innerHTML = `<div>${selection.note} (${durationInBeats}) on ${chordName}</div>` + logDiv.innerHTML;
 
                 // 4. 推进状态
                 melodyBusyUntil = nextBeatTime + durationSeconds;
@@ -222,7 +263,7 @@ document.getElementById('start-btn').addEventListener('click', function() {
     melodyBusyUntil = nextBeatTime; // 重置旋律状态
     stepIndex = 0; // 重置步进
     state.currentBeat = 0;
-    state.currentChordIndex = 0; // 重置和弦
+    state.currentChordKey = null; // 重置和弦
     
     tick();
 });
@@ -243,7 +284,7 @@ bpmSlider.addEventListener('input', (e) => {
 // Scale Control
 scaleSelect.addEventListener('change', (e) => {
     state.currentPresetKey = e.target.value;
-    state.currentChordIndex = 0; // 重置和弦进度
+    state.currentChordKey = null; // 重置和弦，下次 tick 会自动初始化为 startChord
     // 可以在这里强制立即切换和弦，或者等待当前小节结束
 });
 
