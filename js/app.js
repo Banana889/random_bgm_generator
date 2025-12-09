@@ -154,7 +154,7 @@ function tick() {
             const styles = ["block", "block", "block", "strum", "arpeggio"];
             const style = styles[Math.floor(Math.random() * styles.length)];
             
-            engine.playPad(chord, nextBeatTime, style);
+            engine.playPad(chord, nextBeatTime, style, beatDuration);
 
             // *** 关键：计算下一个和弦 (Graph Walk) ***
             state.currentChordKey = getNextChordKey(state.currentChordKey, preset.graph);
@@ -187,6 +187,8 @@ function tick() {
                 
                 state.lastPlayedNoteIndex = selection.index;
                 const freq = FREQ[selection.note];
+
+                // todo 根据选音的结果，如果是稳定音，则适当延长时值
 
                 // 3. 播放
                 engine.playMelodyNote(freq, durationSeconds, nextBeatTime);

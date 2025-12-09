@@ -12,18 +12,18 @@ class AudioEngine {
         this.reverb.generate();
 
         // 2. 和弦合成器 (Pad Synth)
-        // 使用 PolySynth 支持复音，声音选用 "FatOscillator" (加厚锯齿波)
+        // 使用 PolySynth 支持复音，声音选用 "FatOscillator" (加厚锯齿波)(改为 sine)
         this.padSynth = new Tone.PolySynth(Tone.Synth, {
             oscillator: {
-                type: "fatsawtooth",
-                count: 3,
+                type: "sine", // 波形
+                count: 3, // 这里的 count, spread 用于模拟合奏
                 spread: 30
             },
             envelope: {
-                attack: 1,
-                decay: 0.5,
-                sustain: 1,
-                release: 2
+                attack: 1, // 渐强时间: 静音 ——》 全音量 
+                decay: 0.5, // 衰减时间: 全音量 ——》 持续音量
+                sustain: 0.8, // 持续音量
+                release: 2 // 释放时间: 持续音量 ——》 静音
             }
         }).connect(this.reverb);
         
@@ -110,7 +110,7 @@ class AudioEngine {
     }
 
     // 统一接口
-    playPad(chord, time, style = "block") {
+    playPad(chord, time, style = "block", beatDuration) {
         // 释放之前的音 (如果有的话)
         this.padSynth.releaseAll(time);
 
@@ -121,13 +121,15 @@ class AudioEngine {
         switch (style) {
             case "strum": // 扫弦：模拟吉他，快速依次触发 (间隔 50ms)
                 notes.forEach((note, i) => {
-                    this.padSynth.triggerAttack(note, time + i * time / 8);
+                    this.padSynth.triggerAttack(note, time + i * beatDuration / 4);
                 });
                 break;
             
             case "arpeggio": // 琶音：较慢的依次触发 (间隔 150ms)
+                // 随机打乱 notes 顺序
+                notes.sort(() => Math.random() - 0.5); // woc 这个写得好妙woc 好简洁
                 notes.forEach((note, i) => {
-                    this.padSynth.triggerAttack(note, time + i * time / 4);
+                    this.padSynth.triggerAttackRelease(note, '1n', time + i * beatDuration);
                 });
                 break;
 
