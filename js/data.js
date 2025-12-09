@@ -5,12 +5,14 @@ const FREQ = {
     'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00, 'A4': 440.00, 'B4': 493.88,
     'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99, 'A5': 880.00
 };
-// ...existing code...
+
 // 2. 音乐预设 (包含音阶和对应的和弦进行)
 const PRESETS = {
     "c_major": {
         name: "C Major (Dynamic Pop)",
         scale: ['C3','D3','E3','F3','G3','A3','B3','C4','D4','E4','F4','G4','A4','B4','C5'],
+        // 新增：定义稳定音 (主音 C, 属音 G)
+        stableNotes: ["C", "G"], 
         startChord: "I",
         // 定义该调式内可用的和弦节点
         chords: {
@@ -34,6 +36,8 @@ const PRESETS = {
     "a_minor": {
         name: "A Minor (Emotional)",
         scale: ['A2','B2','C3','D3','E3','F3','G3','A3','B3','C4','D4','E4','F4','G4','A4'],
+        // 新增：定义稳定音 (主音 A, 属音 E)
+        stableNotes: ["A", "E"],
         startChord: "i",
         chords: {
             "i":   { name: "Am9",   root: "A2", tones: ["A", "C", "E", "G", "B"] },
@@ -55,6 +59,8 @@ const PRESETS = {
     "chill_lofi": {
         name: "Lo-Fi (Jazz Hop)",
         scale: ['C3','D3','E3','G3','A3','C4','D4','E4','G4','A4','C5'],
+        // 新增：定义稳定音 (C, G)
+        stableNotes: ["C", "G"],
         startChord: "I",
         chords: {
             "I":   { name: "Cmaj9", root: "C3", tones: ["C", "E", "G", "B", "D"] },
