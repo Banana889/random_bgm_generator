@@ -4,8 +4,23 @@
     <meta charset="UTF-8">
     <title>Generative Guitar Station</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* 新增：雨滴 Canvas 样式，覆盖全屏但不阻挡点击 */
+        #rain-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* 放在背景层 */
+            pointer-events: none; /* 让鼠标事件穿透 */
+            opacity: 0.6;
+        }
+    </style>
 </head>
 <body>
+    <!-- 新增 Canvas -->
+    <canvas id="rain-canvas"></canvas>
 
     <div class="controls-top">
         <div class="control-group">
@@ -31,6 +46,14 @@
             <label>BPM: <span id="bpm-val">80</span></label>
             <input type="range" id="bpm-slider" min="40" max="160" value="80">
         </div>
+        <!-- 新增：雨声开关 -->
+        <div class="control-group">
+            <label>Rain Ambience</label>
+            <label class="switch">
+                <input type="checkbox" id="rain-toggle">
+                <span class="slider round"></span>
+            </label>
+        </div>
     </div>
 
     <div class="display-area" id="main-ui">
@@ -55,8 +78,10 @@
     <!-- 按顺序加载脚本 -->
     <script src="js/data.js"></script>
     <script src="js/synth.js"></script>
+    <script src="js/nextnote.js"></script>
+    <!-- 新增：视觉脚本 -->
+    <script src="js/visuals.js"></script> 
     <script src="js/app.js"></script>
     <script src="js/worker.js"></script>
-    <script src="js/nextnote.js"></script>
 </body>
 </html>

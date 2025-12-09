@@ -106,7 +106,37 @@ class AudioEngine {
             resonance: 4000,
             octaves: 1.5
         }).toDestination();
-        this.hihat.volume.value = -10; // 稍微小声点
+        this.hihat.volume.value = -10; 
+
+        // --- 5. 环境音效 (Ambience - Rain) ---
+        // 使用 Pink Noise (粉红噪音) 模拟雨声
+        this.rainNoise = new Tone.Noise("pink");
+        
+        // 使用 AutoFilter 模拟风吹雨打的动态感 (低通滤波自动扫描)
+        this.rainFilter = new Tone.AutoFilter({
+            frequency: 0.1, // 变化速度很慢
+            depth: 0.5,     // 变化深度
+            baseFrequency: 400, // 基础截止频率 (越低越闷，像在室内听雨)
+            octaves: 2,
+            type: "sine"
+        }).start();
+
+        this.rainVolume = new Tone.Volume(-Infinity); // 初始静音
+
+        // 链路: Noise -> AutoFilter -> Volume -> Reverb -> Out
+        this.rainNoise.chain(this.rainFilter, this.rainVolume, this.reverb);
+        this.rainNoise.start();
+    }
+
+    // --- 新增：雨声控制 ---
+    toggleRain(isEnabled) {
+        if (isEnabled) {
+            // 淡入到 -15dB
+            this.rainVolume.volume.rampTo(-25, 2);
+        } else {
+            // 淡出到静音
+            this.rainVolume.volume.rampTo(-Infinity, 2);
+        }
     }
 
     // 统一接口
