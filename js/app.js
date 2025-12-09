@@ -25,6 +25,7 @@ let engine;
 let nextBeatTime = 0; 
 let melodyBusyUntil = 0; // 新增：旋律忙碌截止时间，用于处理长音符 
 let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...) 
+let timerWorker = null; // 新增：Worker 实例
 
 // 填充下拉菜单
 const scaleSelect = document.getElementById('scale-select');
@@ -250,15 +251,16 @@ function tick() {
         stepIndex++;
         state.currentBeat = Math.floor(stepIndex / 2) % state.beatsPerBar;
     }
-
-    requestAnimationFrame(tick);
 }
 
 // --- 事件监听 ---
 
-document.getElementById('start-btn').addEventListener('click', function() {
+document.getElementById('start-btn').addEventListener('click', async function() {
+    await Tone.start();
+    console.log("Audio Context Started");
+
     if (!engine) engine = new AudioEngine();
-    engine.resume();
+    await engine.resume(); 
     
     state.isPlaying = true;
     this.style.display = 'none';
@@ -272,7 +274,16 @@ document.getElementById('start-btn').addEventListener('click', function() {
     state.currentBeat = 0;
     state.currentChordKey = null; // 重置和弦
     
-    tick();
+    // --- 修改：启动 Web Worker ---
+    if (!timerWorker) {
+        timerWorker = new Worker('js/worker.js');
+        timerWorker.onmessage = function(e) {
+            if (e.data === "tick") {
+                tick(); // 收到 Worker 信号时执行 tick
+            }
+        };
+    }
+    timerWorker.postMessage("start");
 });
 
 // 新增：鼓组开关监听
