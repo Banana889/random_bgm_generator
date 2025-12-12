@@ -27,13 +27,22 @@ let melodyBusyUntil = 0; // 新增：旋律忙碌截止时间，用于处理长�
 let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...) 
 let timerWorker = null; // 新增：Worker 实例
 
-// 填充下拉菜单
+
 const scaleSelect = document.getElementById('scale-select');
 Object.keys(PRESETS).forEach(key => {
     const option = document.createElement('option');
     option.value = key;
-    option.innerText = PRESETS[key].name;
+    option.text = PRESETS[key].name;
     scaleSelect.appendChild(option);
+});
+
+// 新增：初始化音色选择器
+const instrumentSelect = document.getElementById('instrument-select');
+Object.keys(INSTRUMENT_PRESETS).forEach(key => {
+    const option = document.createElement('option');
+    option.value = key;
+    option.text = INSTRUMENT_PRESETS[key].name;
+    instrumentSelect.appendChild(option);
 });
 
 // --- 核心逻辑 ---
@@ -143,7 +152,8 @@ function tick() {
         // 1. 鼓组 (Drums)
         if (state.isDrumsEnabled && isOnBeat) {
             if (currentBeatInBar === 0) {
-                engine.playKick(nextBeatTime);
+                // engine.playKick(nextBeatTime);
+                engine.playHiHatHeavey(nextBeatTime);
             } else {
                 engine.playHiHat(nextBeatTime);
             }
@@ -301,6 +311,13 @@ scaleSelect.addEventListener('change', (e) => {
     state.currentPresetKey = e.target.value;
     state.currentChordKey = null; // 重置和弦，下次 tick 会自动初始化为 startChord
     // 可以在这里强制立即切换和弦，或者等待当前小节结束
+});
+
+// 新增：Instrument Control
+instrumentSelect.addEventListener('change', (e) => {
+    if (engine) {
+        engine.setInstrument(e.target.value);
+    }
 });
 
 // Time Sig Control

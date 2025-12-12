@@ -4,135 +4,66 @@ class AudioEngine {
         // Tone.js 的 Reverb 比卷积混响更灵活，且自带衰减控制
         this.reverb = new Tone.Reverb({
             decay: 4,
-            wet: 0.5,
-            preDelay: 0.2
-        }).toDestination(); // 连接到主输出
-        
-        // 必须调用 generate() 才能生效
+            preDelay: 0.2,
+            wet: 0.4
+        }).toDestination();
         this.reverb.generate();
 
-        // 2. 和弦合成器 (Pad Synth)
-        // 使用 PolySynth 支持复音，声音选用 "FatOscillator" (加厚锯齿波)(改为 sine)
-        this.padSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: {
-                type: "sine", // 波形
-                count: 3, // 这里的 count, spread 用于模拟合奏
-                spread: 30
-            },
-            envelope: {
-                attack: 1, // 渐强时间: 静音 ——》 全音量 
-                decay: 0.5, // 衰减时间: 全音量 ——》 持续音量
-                sustain: 0.8, // 持续音量
-                release: 2 // 释放时间: 持续音量 ——》 静音
-            }
-        }).connect(this.reverb);
-        
-        // 降低 Pad 音量，作为背景
-        this.padSynth.volume.value = -20; // dB
-
-        // 3. 旋律合成器 (Lead Synth)
-        // 使用 AMSynth (调幅合成)，声音更有金属感和动态
-        this.melodySynth = new Tone.AMSynth({
-            harmonicity: 3,
-            detune: 0,
-            oscillator: {
-                type: "sine"
-            },
-            envelope: {
-                attack: 0.01,
-                decay: 0.01,
-                sustain: 1,
-                release: 0.5
-            },
-            modulation: {
-                type: "square"
-            },
-            modulationEnvelope: {
-                attack: 0.5,
-                decay: 0,
-                sustain: 1,
-                release: 0.5
-            }
-        });
-        
-        // 加一个乒乓延时，让旋律在左右耳跳动
-        this.pingPong = new Tone.PingPongDelay("8n", 0.4).connect(this.reverb);
-        this.melodySynth.connect(this.pingPong);
-        this.melodySynth.volume.value = -10;
-
-        // 4. 鼓组 (Drums)
-        // 底鼓：MembraneSynth (专门做鼓的合成器)
-        this.kick = new Tone.MembraneSynth({
-            pitchDecay: 0.08,
-            octaves: 6,               // 进一步降低八度变化
-            oscillator: { type: "sine" },
-            envelope: {
-                attack: 0.001,
-                decay: 0.5,
-                sustain: 0.03,
-                release: 0.7,
-                attackCurve: "sine"   // 更柔和的起音曲线
-            }
-        });
-        
-        // 添加低通滤波器，切掉刺耳的高频
-        const filter = new Tone.Filter({
-            type: "lowpass",
-            frequency: 120,           // 只保留120Hz以下低频
-            rolloff: -12,
-            Q: 1
-        });
-        
-        // 添加轻微饱和/失真，增加谐波温暖感
-        const saturation = new Tone.Distortion({
-            distortion: 0.2,          // 轻微失真，不要超过0.3
-            wet: 0.3                  // 混合比例30%
-        });
-        
-        // 串联效果器
-        this.kick.chain(saturation, filter, Tone.Destination);
-        this.kick.volume.value = -6;
-
-        // 镲片：MetalSynth (专门做金属打击乐)
-        this.hihat = new Tone.MetalSynth({
-            frequency: 200,
-            envelope: {
-                attack: 0.005,
-                decay: 0.1,
-                release: 0.01
-            },
-            harmonicity: 5.1,
-            modulationIndex: 32,
-            resonance: 4000,
-            octaves: 1.5
-        }).toDestination();
-        this.hihat.volume.value = -10; 
-
-        // --- 5. 环境音效 (Ambience - Rain) ---
-        // 使用 Pink Noise (粉红噪音) 模拟雨声
-        this.rainNoise = new Tone.Noise("pink");
-        
-        // 使用 AutoFilter 模拟风吹雨打的动态感 (低通滤波自动扫描)
-        this.rainFilter = new Tone.AutoFilter({
-            frequency: 0.1, // 变化速度很慢
-            depth: 0.5,     // 变化深度
-            baseFrequency: 400, // 基础截止频率 (越低越闷，像在室内听雨)
-            octaves: 2,
-            type: "sine"
+        // 2. 效果器链 (Pad)
+        this.padFilter = new Tone.AutoFilter({
+            frequency: 0.2, baseFrequency: 200, octaves: 3, depth: 0.7, type: "sine"
+        }).start();
+        this.padTremolo = new Tone.Tremolo({
+            frequency: 3, depth: 0.2, spread: 180
         }).start();
 
-        this.rainVolume = new Tone.Volume(-Infinity); // 初始静音
-
-        // 链路: Noise -> AutoFilter -> Volume -> Reverb -> Out
+        // 3. 初始化合成器 (先创建空壳，具体参数由 setInstrument 填充)
+        // Pad Synth
+        this.padSynth = new Tone.PolySynth(Tone.Synth).chain(this.padTremolo, this.padFilter, this.reverb);
+        
+        // Lead Synth (旋律)
+        // 使用 PolySynth 以支持快速音符重叠时的平滑过渡
+        this.leadSynth = new Tone.PolySynth(Tone.Synth).connect(this.reverb);
+        
+        // 4. 鼓组 & 环境音 (保持不变)
+        this.kick = new Tone.MembraneSynth().toDestination();
+        this.hihat = new Tone.MetalSynth().toDestination();
+        this.hihat.volume.value = -25;
+        this.rainNoise = new Tone.Noise("pink");
+        this.rainFilter = new Tone.AutoFilter({ frequency: 0.1, depth: 0.5, baseFrequency: 600 }).start();
+        this.rainVolume = new Tone.Volume(-Infinity);
         this.rainNoise.chain(this.rainFilter, this.rainVolume, this.reverb);
         this.rainNoise.start();
+
+        // 5. 加载默认音色
+        this.setInstrument("origin");
+    }
+
+    // 新增：切换音色方法
+    setInstrument(presetKey) {
+        const preset = INSTRUMENT_PRESETS[presetKey];
+        if (!preset) return;
+
+        console.log("Switching instrument to:", preset.name);
+
+        // 更新 Pad 设置
+        // 提取 volume 单独处理，其他参数全部传给 synth
+        const { volume: padVolume, ...padParams } = preset.pad;
+        this.padSynth.set(padParams);
+        this.padSynth.volume.rampTo(padVolume, 0.1);
+
+        // 更新 Lead 设置
+        // 关键修改：使用解构赋值，把 modulation, modulationEnvelope 等所有参数都传进去
+        const { volume: leadVolume, ...leadParams } = preset.lead;
+        this.leadSynth.set(leadParams);
+        this.leadSynth.volume.rampTo(leadVolume, 0.1);
     }
 
     // --- 新增：雨声控制 ---
     toggleRain(isEnabled) {
         if (isEnabled) {
             // 淡入到 -15dB
-            this.rainVolume.volume.rampTo(-25, 2);
+            this.rainVolume.volume.rampTo(-15, 2);
         } else {
             // 淡出到静音
             this.rainVolume.volume.rampTo(-Infinity, 2);
@@ -168,7 +99,6 @@ class AudioEngine {
                 this.padSynth.triggerAttack(notes, time);
                 break;
         }
-        this.padSynth.volume.value = -30;
     }
 
     // 辅助函数：根据和弦名称获取具体音符频率
@@ -205,9 +135,10 @@ class AudioEngine {
         return intervals.map(semitone => Tone.Frequency(root).transpose(semitone));
     }
 
-    playMelodyNote(freq, duration, time) {
-        // Tone.js 可以直接接受频率数字
-        this.melodySynth.triggerAttackRelease(freq, duration, time);
+        playMelodyNote(freq, duration, time) {
+        // 稍微随机化 velocity (力度)，让声音更自然
+        const velocity = 0.6 + Math.random() * 0.3;
+        this.leadSynth.triggerAttackRelease(freq, duration, time, velocity);
     }
 
     playKick(time) {
@@ -215,10 +146,16 @@ class AudioEngine {
         this.kick.triggerAttackRelease(60, "8n", time);
     }
 
+    playHiHatHeavey(time) {
+        console.log("Playing hi-hat at time:", time);
+        // 触发短促的噪音
+        this.hihat.triggerAttackRelease(200, "32n", time, 0.25); // velocity 0.3
+    }
+
     playHiHat(time) {
         console.log("Playing hi-hat at time:", time);
         // 触发短促的噪音
-        this.hihat.triggerAttackRelease(200, "32n", time, 0.1); // velocity 0.3
+        this.hihat.triggerAttackRelease(160, "32n", time, 0.1); // velocity 0.3
     }
     
     async resume() {
