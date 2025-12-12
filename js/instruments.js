@@ -26,7 +26,7 @@ const INSTRUMENT_PRESETS = {
         }
     },
     "soft_dream": {
-        name: "Soft Dream",
+        name: "Soft Dream (C Major High, and higner BPM recommended)",
         // 和弦合成器配置 (保持不变)
         pad: {
             oscillator: { type: "sine", count: 10, spread: 30 },
