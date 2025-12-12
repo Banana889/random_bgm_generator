@@ -29,6 +29,14 @@
                 <!-- 动态生成 -->
             </select>
         </div>
+        
+        <!-- 新增：音色选择 -->
+        <div class="control-group">
+            <label>SOUND</label>
+            <select id="instrument-select">
+                <!-- JS填充 -->
+            </select>
+        </div>
         <div class="control-group">
             <label>TIME SIG</label>
             <select id="time-sig-select">
@@ -77,6 +85,8 @@
 
     <!-- 按顺序加载脚本 -->
     <script src="js/data.js"></script>
+    <!-- 新增引入 -->
+    <script src="js/instruments.js"></script>
     <script src="js/synth.js"></script>
     <script src="js/nextnote.js"></script>
     <!-- 新增：视觉脚本 -->
