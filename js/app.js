@@ -22,6 +22,7 @@ const state = {
 
 // --- 初始化 ---
 let engine; 
+let noiseGen; // 新增
 let nextBeatTime = 0; 
 let melodyBusyUntil = 0; // 新增：旋律忙碌截止时间，用于处理长音符 
 let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...) 
@@ -254,8 +255,10 @@ document.getElementById('start-btn').addEventListener('click', async function() 
     console.log("Audio Context Started");
 
     if (!engine) engine = new AudioEngine();
-    await engine.resume(); 
+    // 新增：初始化噪音生成器
+    if (!noiseGen) noiseGen = new NoiseGenerator();
     
+    await engine.resume(); 
     state.isPlaying = true;
     this.style.display = 'none';
     document.getElementById('main-ui').style.opacity = 1;
@@ -296,6 +299,40 @@ document.getElementById('rain-toggle').addEventListener('change', (e) => {
     
     // 2. 控制视觉
     visuals.toggle(isEnabled);
+});
+
+// --- 噪音控制事件监听 ---
+
+// 1. 音量控制
+document.getElementById('noise-vol').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    if (noiseGen) noiseGen.setVolume(val);
+    
+    // 联动视觉效果：有声音就有雨滴
+    if (visuals) visuals.toggle(val > 0.05);
+});
+
+// 2. 频率控制 (Tone)
+document.getElementById('noise-freq').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    if (noiseGen) noiseGen.setFilterFreq(val);
+});
+
+// 3. Q值控制 (Wind)
+document.getElementById('noise-q').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    if (noiseGen) {
+        noiseGen.setFilterQ(val);
+        // 当 Q 值很高时，切换到带通滤波器，风声更逼真
+        if (val > 5) {
+            noiseGen.setType('bandpass');
+        } else {
+            noiseGen.setType('lowpass');
+        }
+    }
+    
+    // 联动视觉：风越大，雨越斜
+    if (visuals) visuals.wind = val * 2; // 简单的联动映射
 });
 
 // BPM Control
