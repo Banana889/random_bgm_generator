@@ -54,13 +54,37 @@
             <label>BPM: <span id="bpm-val">80</span></label>
             <input type="range" id="bpm-slider" min="40" max="160" value="80">
         </div>
-        <!-- 新增：雨声开关 -->
+    </div>
+    <div class="controls-bottom">
+        <!-- 雨声开关 -->
         <div class="control-group">
             <label>Rain Ambience</label>
             <label class="switch">
                 <input type="checkbox" id="rain-toggle">
                 <span class="slider round"></span>
             </label>
+        </div>
+        <!-- 新增：噪音控制面板 -->
+        <div class="control-group" style="flex-direction: column; align-items: flex-start; gap: 10px; margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; width: 100%;">
+            <label style="color: #888; font-size: 12px; margin-bottom: 5px;">AMBIENCE CONTROL</label>
+            
+            <!-- 音量 -->
+            <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+                <label style="font-size: 12px;">Rain Vol</label>
+                <input type="range" id="noise-vol" min="0" max="1" step="0.01" value="0" style="width: 60%;">
+            </div>
+
+            <!-- 频率 (雨的大小/颜色) -->
+            <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+                <label style="font-size: 12px;">Tone</label>
+                <input type="range" id="noise-freq" min="100" max="3000" step="10" value="400" style="width: 60%;">
+            </div>
+
+            <!-- Q值 (风声/共振) -->
+            <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+                <label style="font-size: 12px;">Wind</label>
+                <input type="range" id="noise-q" min="0" max="20" step="0.1" value="0" style="width: 60%;">
+            </div>
         </div>
     </div>
 
@@ -85,9 +109,10 @@
 
     <!-- 按顺序加载脚本 -->
     <script src="js/data.js"></script>
-    <!-- 新增引入 -->
     <script src="js/instruments.js"></script>
     <script src="js/synth.js"></script>
+
+    <script src="js/noise_generator.js"></script>
     <script src="js/nextnote.js"></script>
     <!-- 新增：视觉脚本 -->
     <script src="js/visuals.js"></script> 

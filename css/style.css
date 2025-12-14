@@ -1,6 +1,6 @@
 body {
     background-color: #222;
-    color: #ff9d00;
+    color: #00ffc8;
     font-family: 'Courier New', Courier, monospace;
     display: flex;
     flex-direction: column;
@@ -34,8 +34,8 @@ label {
 
 select, input {
     background: #222;
-    color: #ff9d00;
-    border: 1px solid #ff9d00;
+    color: #00ffc8;
+    border: 1px solid #00ffc8;
     padding: 5px;
     font-family: inherit;
 }
@@ -44,15 +44,15 @@ button {
     padding: 15px 30px;
     font-size: 1.2rem;
     background: transparent;
-    border: 2px solid #ff9d00;
-    color: #ff9d00;
+    border: 2px solid #00ffc8;
+    color: #00ffc8;
     cursor: pointer;
     transition: 0.3s;
     margin-top: 30px;
     margin-bottom: 20px;
 }
 
-button:hover { background: #ff9d00; color: #222; }
+button:hover { background: #00ffc8; color: #222; }
 
 .display-area {
     display: flex;
