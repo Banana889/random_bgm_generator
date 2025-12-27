@@ -35,6 +35,17 @@ class AudioEngine {
         this.rainNoise.chain(this.rainFilter, this.rainVolume, this.reverb);
         this.rainNoise.start();
 
+        // autostart: false (手动控制)
+        // loop: true (循环播放)
+        this.rainPlayer = new Tone.Player({
+            url: "res/rain.mp3",
+            loop: true,
+            autostart: false,
+            fadeIn: 2,  // 淡入 2秒
+            fadeOut: 2  // 淡出 2秒
+        }).toDestination(); // 直接输出，或者 .connect(this.reverb) 加混响
+        this.rainPlayer.volume.value = -10;
+
         // 5. 加载默认音色
         this.setInstrument("origin");
     }
@@ -59,16 +70,30 @@ class AudioEngine {
         this.leadSynth.volume.rampTo(leadVolume, 0.1);
     }
 
-    // --- 新增：雨声控制 ---
     toggleRain(isEnabled) {
         if (isEnabled) {
-            // 淡入到 -15dB
             this.rainVolume.volume.rampTo(-15, 2);
+
+            // 确保音频已加载 (Tone.Player 是异步加载的)
+            if (this.rainPlayer.loaded) {
+                this.rainPlayer.start();
+                console.log("Rain MP3 started");
+            } else {
+                console.log("Rain MP3 loading...");
+                // 如果还没加载完，等加载完自动播放
+                Tone.loaded().then(() => {
+                    this.rainPlayer.start();
+                    console.log("Rain MP3 started (delayed)");
+                });
+            }
         } else {
-            // 淡出到静音
             this.rainVolume.volume.rampTo(-Infinity, 2);
+
+            this.rainPlayer.stop();
+            console.log("Rain MP3 stopped");
         }
     }
+
 
     // 统一接口
     playPad(chord, time, style = "block", beatDuration) {
