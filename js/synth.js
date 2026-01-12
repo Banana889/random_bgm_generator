@@ -19,11 +19,11 @@ class AudioEngine {
 
         // 3. 初始化合成器 (先创建空壳，具体参数由 setInstrument 填充)
         // Pad Synth
-        this.padSynth = new Tone.PolySynth(Tone.Synth).chain(this.padTremolo, this.padFilter, this.reverb);
+        this.padSynth = new Tone.PolySynth(Tone.AMSynth).chain(this.padTremolo, this.padFilter, this.reverb);
         
         // Lead Synth (旋律)
         // 使用 PolySynth 以支持快速音符重叠时的平滑过渡
-        this.leadSynth = new Tone.PolySynth(Tone.Synth).connect(this.reverb);
+        this.leadSynth = new Tone.PolySynth(Tone.FMSynth).connect(this.reverb);
         
         // 4. 鼓组 & 环境音 (保持不变)
         this.kick = new Tone.MembraneSynth().toDestination();
@@ -50,7 +50,7 @@ class AudioEngine {
         this.setInstrument("origin");
     }
 
-    // 新增：切换音色方法
+    // 加载音色
     setInstrument(presetKey) {
         const preset = INSTRUMENT_PRESETS[presetKey];
         if (!preset) return;
