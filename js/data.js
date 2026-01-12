@@ -56,25 +56,50 @@ const PRESETS = {
             "VII": { "III": 3, "i": 2 }
         }
     },
-    "chill_lofi": {
-        name: "Lo-Fi (Jazz Hop)",
+    // "chill_lofi": {
+    //     name: "Lo-Fi (Jazz Hop)",
+    //     scale: ['C3','D3','E3','G3','A3','C4','D4','E4','G4','A4','C5'],
+    //     // 新增：定义稳定音 (C, G)
+    //     stableNotes: ["C", "G"],
+    //     startChord: "I",
+    //     chords: {
+    //         "I":   { name: "Cmaj9", root: "C3", tones: ["C", "E", "G", "B", "D"] },
+    //         "ii":  { name: "Dm9",   root: "D3", tones: ["D", "F", "A", "C", "E"] },
+    //         "IV":  { name: "Fmaj9", root: "F3", tones: ["F", "A", "C", "E", "G"] },
+    //         "vi":  { name: "Am9",   root: "A2", tones: ["A", "C", "E", "G", "B"] }
+    //     },
+    //     graph: {
+    //         "I":   { "vi": 2, "IV": 2, "ii": 1 },
+    //         "ii":  { "IV": 2, "I": 1 },
+    //         "IV":  { "I": 2, "ii": 2 },
+    //         "vi":  { "ii": 2, "IV": 2 }
+    //     }
+    // }, 
+    "5_scale": {
+        name: "Pentatonic Scale (Versatile)",
         scale: ['C3','D3','E3','G3','A3','C4','D4','E4','G4','A4','C5'],
         // 新增：定义稳定音 (C, G)
-        stableNotes: ["C", "G"],
+        stableNotes: ["C", "G"], 
         startChord: "I",
+        // 定义该调式内可用的和弦节点
         chords: {
-            "I":   { name: "Cmaj9", root: "C3", tones: ["C", "E", "G", "B", "D"] },
-            "ii":  { name: "Dm9",   root: "D3", tones: ["D", "F", "A", "C", "E"] },
-            "IV":  { name: "Fmaj9", root: "F3", tones: ["F", "A", "C", "E", "G"] },
-            "vi":  { name: "Am9",   root: "A2", tones: ["A", "C", "E", "G", "B"] }
+            "I":   { name: "Cmaj7", root: "C4", tones: ["C", "E", "G", "B"] },
+            "ii":  { name: "Dm7",   root: "D3", tones: ["D", "F", "A", "C"] },
+            "iii": { name: "Em7",   root: "E3", tones: ["E", "G", "B", "D"] },
+            "IV":  { name: "Fmaj7", root: "F3", tones: ["F", "A", "C", "E"] },
+            "V":   { name: "G7",    root: "G3", tones: ["G", "B", "D", "F"] },
+            "vi":  { name: "Am7",   root: "A3", tones: ["A", "C", "E", "G"] }
         },
+        // 定义和弦转移图 (权重越大，跳转概率越高)
         graph: {
-            "I":   { "vi": 2, "IV": 2, "ii": 1 },
-            "ii":  { "IV": 2, "I": 1 },
-            "IV":  { "I": 2, "ii": 2 },
-            "vi":  { "ii": 2, "IV": 2 }
+            "I":   { "IV": 3, "V": 2, "vi": 2, "ii": 1 }, // 主和弦可以去任何地方
+            "ii":  { "V": 4, "vi": 1 },                   // ii -> V (2-5进行)
+            "iii": { "vi": 3, "IV": 1 },                  // iii -> vi
+            "IV":  { "V": 3, "I": 2, "ii": 1 },           // IV -> V 或 回到 I
+            "V":   { "I": 4, "vi": 2, "iii": 1 },         // V -> I (解决)
+            "vi":  { "ii": 2, "IV": 2, "iii": 1, "V": 1 } // vi -> ii
         }
-    }, 
+    },
     "c_major_high": {
         name: "C Major High (Bright)",
         scale: ['C4','D4','E4','F4','G4','A4','B4','C5','D5','E5','F5','G5'],
