@@ -24,6 +24,9 @@ class AudioEngine {
         // Lead Synth (旋律)
         // 使用 PolySynth 以支持快速音符重叠时的平滑过渡
         this.leadSynth = new Tone.PolySynth(Tone.FMSynth).connect(this.reverb);
+
+        // 新增：用于 Wind Bell 的加法合成器组 (初始为空)
+        this.additiveSynths = []; 
         
         // 4. 鼓组 & 环境音 (保持不变)
         this.kick = new Tone.MembraneSynth().toDestination();
@@ -49,26 +52,62 @@ class AudioEngine {
         // 5. 加载默认音色
         this.setInstrument("origin");
     }
-
+    
     // 加载音色
     setInstrument(presetKey) {
         const preset = INSTRUMENT_PRESETS[presetKey];
         if (!preset) return;
 
         console.log("Switching instrument to:", preset.name);
+        
+        // 保存当前预设类型，以便 playMelodyNote 知道怎么处理
+        this.currentLeadType = preset.lead.type || "standard"; 
 
-        // 更新 Pad 设置
-        // 提取 volume 单独处理，其他参数全部传给 synth
+        // --- 1. 更新 Pad 设置 ---
         const { volume: padVolume, ...padParams } = preset.pad;
         this.padSynth.set(padParams);
         this.padSynth.volume.rampTo(padVolume, 0.1);
 
-        // 更新 Lead 设置
-        // 关键修改：使用解构赋值，把 modulation, modulationEnvelope 等所有参数都传进去
-        const { volume: leadVolume, ...leadParams } = preset.lead;
-        this.leadSynth.set(leadParams);
-        this.leadSynth.volume.rampTo(leadVolume, 0.1);
+        // --- 2. 更新 Lead 设置 ---
+        
+        // 情况 A: 自定义加法合成 (如 Wind Bell)
+        if (preset.lead.type === "customAdditive") {
+            // 清理旧的加法合成器
+            this.additiveSynths.forEach(s => s.dispose());
+            this.additiveSynths = [];
+
+            // 为每个谐波创建一个 PolySynth
+            preset.lead.harmonics.forEach(h => {
+                // 每个谐波本质上是一个正弦波合成器
+                const synth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "sine" },
+                    envelope: preset.lead.envelope,
+                    volume: preset.lead.volume + (Math.log10(h.amp) * 20) // 将线性振幅转换为 dB
+                }).connect(this.reverb);
+                
+                // 存储比率，以便播放时计算频率
+                synth._ratio = h.ratio; 
+                this.additiveSynths.push(synth);
+            });
+            
+            // 为了避免混淆，让主 leadSynth 静音，或者不管它
+            this.leadSynth.volume.rampTo(-Infinity, 0.1);
+        } 
+        // 情况 B: 标准合成器 (标准流程)
+        else {
+            // 确保清理加法合成器以节省性能
+            this.additiveSynths.forEach(s => s.dispose());
+            this.additiveSynths = [];
+
+            const { volume: leadVolume, ...leadParams } = preset.lead;
+            
+            // 如果从加法切回来，可能需要重置一下 oscillator 类型，防止报错
+            // 因为 PolySynth.set 有时比较挑剔
+            this.leadSynth.set(leadParams);
+            this.leadSynth.volume.rampTo(leadVolume, 0.1);
+        }
     }
+    
 
     toggleRain(isEnabled) {
         if (isEnabled) {
@@ -160,10 +199,24 @@ class AudioEngine {
         return intervals.map(semitone => Tone.Frequency(root).transpose(semitone));
     }
 
-        playMelodyNote(freq, duration, time) {
+    playMelodyNote(freq, duration, time) {
         // 稍微随机化 velocity (力度)，让声音更自然
         const velocity = 0.6 + Math.random() * 0.3;
-        this.leadSynth.triggerAttackRelease(freq, duration, time, velocity);
+
+        if (this.currentLeadType === "customAdditive") {
+            // 触发加法合成器组
+            // 遍历所有子合成器，根据 ratio 算出对应的谐波频率并触发
+            const baseFreq = Tone.Frequency(freq).toFrequency();
+            
+            this.additiveSynths.forEach(synth => {
+                const harmonicFreq = baseFreq * synth._ratio;
+                synth.triggerAttackRelease(harmonicFreq, duration, time, velocity);
+            });
+
+        } else {
+            // 标准触发
+            this.leadSynth.triggerAttackRelease(freq, duration, time, velocity);
+        }
     }
 
     playKick(time) {

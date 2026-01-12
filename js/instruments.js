@@ -38,13 +38,13 @@ const INSTRUMENT_PRESETS = {
             oscillator: { 
                 type: "fmsine",         // FM 正弦波：制造清脆感的关键
                 modulationType: "sine", // 调制波也是正弦波
-                modulationIndex: 3,     // 调制深度：值越大声音越"亮"、越"金属"
+                modulationIndex: 2,     // 调制深度：值越大声音越"亮"、越"金属"
                 harmonicity: 3.0        // 谐波比率：3.0 会产生非常纯净的五度/八度泛音，像水晶
             },
             envelope: { 
-                attack: 0.01, // 敲击感：瞬间达到最大音量
-                decay: 0.3,   // 衰减：敲击后迅速变弱
-                sustain: 0.1, // 延音：保持在很低的音量
+                attack: 0.05, // 敲击感：瞬间达到最大音量
+                decay: 0.4,   // 衰减：敲击后迅速变弱
+                sustain: 0.5, // 延音：保持在很低的音量
                 release: 3.0  // 释放：长长的尾音，营造梦幻感
             },
             // 这是一个小技巧：让金属感也随时间衰减，声音会更自然
@@ -54,7 +54,7 @@ const INSTRUMENT_PRESETS = {
                 sustain: 0,
                 release: 0.2
             },
-            volume: -8 // 铃铛声音穿透力强，稍微降低一点音量
+            volume: -12 // 铃铛声音穿透力强，稍微降低一点音量
         }
     },
     "flute": {
@@ -72,20 +72,19 @@ const INSTRUMENT_PRESETS = {
             volume: -5
         }
     },
-
-    "retro_game": {
-        name: "8-Bit Retro",
-        pad: {
-            oscillator: { type: "square" }, // 方波更有游戏感
-            envelope: { attack: 0.1, decay: 0.1, sustain: 0.3, release: 0.1 },
-            volume: -18
-        },
-        lead: {
-            oscillator: { type: "pulse", width: 0.5 },
-            envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 },
-            volume: -10
-        }
-    },
+    // "retro_game": {
+    //     name: "8-Bit Retro",
+    //     pad: {
+    //         oscillator: { type: "square" }, // 方波更有游戏感
+    //         envelope: { attack: 0.1, decay: 0.1, sustain: 0.3, release: 0.1 },
+    //         volume: -15
+    //     },
+    //     lead: {
+    //         oscillator: { type: "pulse", width: 0.5 },
+    //         envelope: { attack: 0.05, decay: 0.1, sustain: 0.2, release: 0.1 },
+    //         volume: -10
+    //     }
+    // },
     "cinematic": {
         name: "Cinematic Strings",
         pad: {
@@ -111,5 +110,23 @@ const INSTRUMENT_PRESETS = {
             envelope: { attack: 0.01, decay: 0.3, sustain: 0.4, release: 0.5 },
             volume: -2
         }
-    }
+    }, 
+    "wind_bell": {
+        name: "Wind Bell",
+        pad: {
+            oscillator: { type: "fmsine", modulationIndex: 10, harmonicity: 1 },
+            envelope: { attack: 0.1, decay: 1.5, sustain: 0.2, release: 1.0 },
+            volume: -5
+        },
+        lead: {
+            type: "customAdditive",
+            harmonics: [
+                { ratio: 1.0, amp: 1.0 },
+                { ratio: 10.2, amp: 0.1 },
+                { ratio: 13.14, amp: 0.03 }
+            ],
+            volume: -8,
+            envelope: { attack: 0.01, decay: 0.5, sustain: 0.5, release: 0.5 },
+        }
+    }, 
 };
