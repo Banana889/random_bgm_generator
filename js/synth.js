@@ -88,12 +88,20 @@ class AudioEngine {
             kick: "res/drums/kick.mp3",
             snare: "res/drums/snare.mp3",
             hihat: "res/drums/hihat.mp3",
-            hihatHeavy: "res/drums/hihat-heavy.mp3"
+            hihatHeavy: "res/drums/hihat-heavy.mp3",
+            tomLow: "res/drums/tom-low.mp3",
+            tomMid: "res/drums/tom-mid.mp3",
+            tomHigh: "res/drums/tom-high.mp3",
+            crash: "res/drums/crash.mp3"
         }).connect(this.drumVolume);
         this.drumPlayers.player("kick").volume.value = -8;
         this.drumPlayers.player("snare").volume.value = -10;
         this.drumPlayers.player("hihat").volume.value = -18;
         this.drumPlayers.player("hihatHeavy").volume.value = -22;
+        this.drumPlayers.player("tomLow").volume.value = -10;
+        this.drumPlayers.player("tomMid").volume.value = -11;
+        this.drumPlayers.player("tomHigh").volume.value = -12;
+        this.drumPlayers.player("crash").volume.value = -23;
         this.setDrumVolume(0.5);
         this.rainNoise = new Tone.Noise("pink");
         this.rainFilter = new Tone.AutoFilter({ frequency: 0.1, depth: 0.5, baseFrequency: 600 }).start();
@@ -313,6 +321,30 @@ class AudioEngine {
 
         // 触发短促的噪音
         this.hihat.triggerAttackRelease("32n", time, 0.2); // velocity 0.3
+    }
+
+    playTomLow(time) {
+        if (this.playDrumSample('tomLow', time)) return;
+
+        this.kick.triggerAttackRelease(82, "16n", time, 0.42);
+    }
+
+    playTomMid(time) {
+        if (this.playDrumSample('tomMid', time)) return;
+
+        this.kick.triggerAttackRelease(124, "16n", time, 0.38);
+    }
+
+    playTomHigh(time) {
+        if (this.playDrumSample('tomHigh', time)) return;
+
+        this.kick.triggerAttackRelease(165, "16n", time, 0.34);
+    }
+
+    playCrash(time) {
+        if (this.playDrumSample('crash', time)) return;
+
+        this.hihat.triggerAttackRelease("8n", time, 0.34);
     }
     
     async resume() {

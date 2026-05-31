@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#071015">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Driftone">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,7 +13,7 @@
     <link rel="icon" type="image/svg+xml" href="static/driftone-icon-1024.svg">
     <link rel="shortcut icon" href="static/driftone-icon-1024.svg">
     <link rel="apple-touch-icon" href="static/driftone-icon-1024.svg">
-    <link rel="stylesheet" href="css/style.css?v=thunder-visuals">
+    <link rel="stylesheet" href="css/style.css?v=drum-fill-toggle">
     <style>
         /* Rain canvas stays behind the UI and does not block clicks. */
         #rain-canvas {
@@ -125,11 +126,21 @@
                         </div>
                         <div class="control-group inline-control">
                             <label>DRUMS</label>
-                            <input type="checkbox" id="drums-toggle">
+                            <label class="switch">
+                                <input type="checkbox" id="drums-toggle">
+                                <span class="slider round"></span>
+                            </label>
                         </div>
                         <div class="control-group">
                             <label>DRUM VOL</label>
                             <input type="range" id="drum-vol" min="0" max="1" step="0.01" value="0.5">
+                        </div>
+                        <div class="control-group inline-control fill-control">
+                            <label>FILL</label>
+                            <label class="switch fill-switch">
+                                <input type="checkbox" id="drum-fill-btn">
+                                <span class="slider round"></span>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -202,13 +213,13 @@
     <!-- Scripts load in dependency order. -->
     <script src="js/data.js"></script>
     <script src="js/instruments.js"></script>
-    <script src="js/synth.js?v=drum-samples"></script>
+    <script src="js/synth.js?v=drum-fill-toggle"></script>
 
     <script src="js/noise_generator.js"></script>
     <script src="js/nextnote.js"></script>
     <!-- Visuals -->
     <script src="js/visuals.js?v=thunder-visuals"></script>
-    <script src="js/app.js?v=thunder-visuals"></script>
+    <script src="js/app.js?v=drum-fill-toggle"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

@@ -1,24 +1,28 @@
-const CACHE_NAME = 'driftone-pwa-v1';
+const CACHE_NAME = 'driftone-pwa-v6';
 
 const CORE_ASSETS = [
     './',
     './index.html',
     './manifest.webmanifest',
-    './css/style.css?v=thunder-visuals',
+    './css/style.css?v=drum-fill-toggle',
     './js/data.js',
     './js/instruments.js',
-    './js/synth.js?v=drum-samples',
+    './js/synth.js?v=drum-fill-toggle',
     './js/noise_generator.js',
     './js/nextnote.js',
     './js/visuals.js?v=thunder-visuals',
-    './js/app.js?v=thunder-visuals',
+    './js/app.js?v=drum-fill-toggle',
     './js/worker.js',
     './static/driftone-icon-1024.svg',
     './res/rain.mp3',
     './res/drums/kick.mp3',
     './res/drums/snare.mp3',
     './res/drums/hihat.mp3',
-    './res/drums/hihat-heavy.mp3'
+    './res/drums/hihat-heavy.mp3',
+    './res/drums/tom-low.mp3',
+    './res/drums/tom-mid.mp3',
+    './res/drums/tom-high.mp3',
+    './res/drums/crash.mp3'
 ];
 
 self.addEventListener('install', event => {

@@ -235,6 +235,72 @@ input[type="checkbox"] {
     accent-color: var(--accent);
 }
 
+.switch {
+    position: relative;
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 46px;
+    height: 24px;
+}
+
+.switch input {
+    width: 0;
+    height: 0;
+    opacity: 0;
+}
+
+.slider {
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.22);
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.slider::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    bottom: 3px;
+    width: 16px;
+    height: 16px;
+    background: rgba(229, 245, 239, 0.78);
+    transition: transform 0.2s, background 0.2s;
+}
+
+.slider.round,
+.slider.round::before {
+    border-radius: 999px;
+}
+
+.switch input:checked + .slider {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 18px rgba(42, 169, 169, 0.18);
+}
+
+.switch input:checked + .slider::before {
+    transform: translateX(22px);
+    background: #071111;
+}
+
+.fill-control.is-queued label,
+.fill-control.is-active label {
+    color: var(--text);
+}
+
+.fill-switch input:checked + .slider,
+.fill-control.is-queued .slider {
+    background: var(--accent);
+}
+
+.fill-control.is-active .slider {
+    background: var(--accent-warm);
+    border-color: var(--accent-warm);
+    box-shadow: 0 0 20px rgba(242, 109, 109, 0.24);
+}
+
 input[type="range"] {
     padding: 0;
     accent-color: var(--accent);
@@ -376,16 +442,31 @@ h3 {
     width: calc(5px + var(--drum-size) * 9px);
     height: calc(5px + var(--drum-size) * 9px);
     transform: translate(-50%, -50%);
-    opacity: 0.28;
+    opacity: 0.58;
     pointer-events: none;
-    filter: blur(0.15px);
+    filter: none;
 }
 
 .drum-mark-current {
     z-index: 1;
-    opacity: 0.76;
+    opacity: 0.88;
     filter: none;
     animation: drum-mark-current 0.42s ease-out both;
+}
+
+.drum-fill {
+    z-index: 1;
+    opacity: 0.82;
+    filter: none;
+}
+
+.drum-fill::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border: 1px solid rgba(242, 109, 109, 0.52);
+    border-radius: inherit;
+    box-shadow: 0 0 12px rgba(242, 109, 109, 0.34);
 }
 
 .drum-mark-current.drum-kick {
@@ -405,25 +486,62 @@ h3 {
     box-shadow: 0 0 12px rgba(42, 169, 169, 0.38), 0 0 26px rgba(42, 169, 169, 0.16);
 }
 
+.drum-mark-current.drum-tom-low,
+.drum-mark-current.drum-tom-mid,
+.drum-mark-current.drum-tom-high {
+    border-color: rgba(242, 109, 109, 0.76);
+    background: rgba(242, 109, 109, 0.16);
+    box-shadow: 0 0 16px rgba(242, 109, 109, 0.34), 0 0 34px rgba(42, 169, 169, 0.1);
+}
+
+.drum-mark-current.drum-crash {
+    background: rgba(242, 109, 109, 0.78);
+    box-shadow: 0 0 18px rgba(242, 109, 109, 0.42), 0 0 44px rgba(242, 109, 109, 0.2);
+}
+
 .drum-kick {
-    border: 1px solid rgba(242, 109, 109, 0.34);
+    border: 1px solid rgba(242, 109, 109, 0.68);
     border-radius: 50%;
-    background: rgba(242, 109, 109, 0.08);
-    box-shadow: 0 0 18px rgba(242, 109, 109, 0.08);
+    background: rgba(242, 109, 109, 0.18);
+    box-shadow: 0 0 14px rgba(242, 109, 109, 0.22);
 }
 
 .drum-snare {
-    border: 1px solid rgba(229, 245, 239, 0.24);
+    border: 1px solid rgba(229, 245, 239, 0.58);
     border-radius: 3px;
-    background: rgba(229, 245, 239, 0.06);
-    box-shadow: 0 0 12px rgba(229, 245, 239, 0.06);
+    background: rgba(229, 245, 239, 0.14);
+    box-shadow: 0 0 12px rgba(229, 245, 239, 0.18);
 }
 
 .drum-hihat {
     height: 2px;
     border-radius: 999px;
-    background: rgba(42, 169, 169, 0.34);
-    box-shadow: 0 0 10px rgba(42, 169, 169, 0.06);
+    background: rgba(42, 169, 169, 0.72);
+    box-shadow: 0 0 10px rgba(42, 169, 169, 0.2);
+}
+
+.drum-tom-low,
+.drum-tom-mid,
+.drum-tom-high {
+    border: 1px solid rgba(242, 109, 109, 0.58);
+    border-radius: 36% 64% 44% 56%;
+    background: rgba(242, 109, 109, 0.16);
+    box-shadow: 0 0 12px rgba(242, 109, 109, 0.2);
+}
+
+.drum-tom-mid {
+    border-radius: 42% 58% 58% 42%;
+}
+
+.drum-tom-high {
+    border-radius: 58% 42% 48% 52%;
+}
+
+.drum-crash {
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(242, 109, 109, 0.76);
+    box-shadow: 0 0 12px rgba(242, 109, 109, 0.26);
 }
 
 .trail-stage::before {

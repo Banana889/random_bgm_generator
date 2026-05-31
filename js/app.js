@@ -16,6 +16,11 @@ const state = {
     drumTrail: [],
     drumPattern: {},
     drumPatternBarsRemaining: 0,
+    isDrumFillEnabled: false,
+    drumFillQueued: false,
+    drumFillActive: false,
+    drumFillPattern: {},
+    drumFillBarsUntilAuto: AUTO_DRUM_FILL_INTERVAL_BARS,
     
     // --- 新增：乐句与动机状态 ---
     phraseState: 'PLAYING', // 'PLAYING' | 'RESTING'
@@ -36,41 +41,14 @@ const SCHEDULE_LOOKAHEAD = 0.18;
 const MAX_MELODY_TRAIL = 12;
 const MAX_DRUM_TRAIL = 28;
 
-const DRUM_PATTERN_POOL = {
-    3: [
-        // Waltz: kick on 1, snares on 2 and 3.
-        { 0: ['kick', 'hihat'], 2: ['snare', 'hihat'], 4: ['snare', 'hihat'] },
-        // 3/4 eighth-note variation with light offbeats.
-        { 0: ['kick', 'hihat'], 1: ['hihat'], 2: ['snare'], 3: ['hihat'], 4: ['snare'], 5: ['hihat'] },
-        // Country waltz-style variation with an extra beat-3 kick.
-        { 0: ['kick'], 1: ['hihat'], 2: ['snare', 'hihat'], 4: ['kick', 'snare'], 5: ['hihat'] }
-    ],
-    6: [
-        // Basic 6/8: kick on count 1, snare on count 4, hats on all counts.
-        { 0: ['kick', 'hihat'], 2: ['hihat'], 4: ['hihat'], 6: ['snare', 'hihat'], 8: ['hihat'], 10: ['hihat'] },
-        // 6/8 variation with an added kick on count 3 before the snare.
-        { 0: ['kick', 'hihat'], 2: ['hihat'], 4: ['kick', 'hihat'], 6: ['snare', 'hihat'], 8: ['hihat'], 10: ['hihat'] },
-        // 6/8 variation with an extra snare on count 6.
-        { 0: ['kick'], 2: ['hihat'], 4: ['kick', 'hihat'], 6: ['snare', 'hihat'], 8: ['hihat'], 10: ['snare', 'hihat'] }
-    ],
-    default: [
-        // Basic rock: eighth-note hats, kick on 1/3, snare on 2/4.
-        { 0: ['kick', 'hihat'], 1: ['hihat'], 2: ['snare', 'hihat'], 3: ['hihat'], 4: ['kick', 'hihat'], 5: ['hihat'], 6: ['snare', 'hihat'], 7: ['hihat'] },
-        // Four-on-the-floor/disco: kick every quarter, snare on 2/4.
-        { 0: ['kick', 'hihat'], 1: ['hihat'], 2: ['kick', 'snare', 'hihat'], 3: ['hihat'], 4: ['kick', 'hihat'], 5: ['hihat'], 6: ['kick', 'snare', 'hihat'], 7: ['hihat'] },
-        // Funk-style syncopation: offbeat kick around the backbeat.
-        { 0: ['kick', 'hihat'], 1: ['hihat'], 2: ['snare', 'hihat'], 3: ['kick', 'hihat'], 4: ['hihat'], 5: ['snare', 'hihat'], 6: ['snare'], 7: ['kick', 'hihat'] },
-        // Half-time feel: strong kick on 1, main snare on 3.
-        { 0: ['kick', 'hihat'], 1: ['hihat'], 2: ['hihat'], 3: ['kick', 'hihat'], 4: ['snare', 'hihat'], 5: ['hihat'], 6: ['kick', 'hihat'], 7: ['hihat'] }
-    ]
-};
-
 const rainToggle = document.getElementById('rain-toggle');
 const thunderToggle = document.getElementById('thunder-toggle');
 const thunderVolInput = document.getElementById('noise-vol');
 const thunderDistanceInput = document.getElementById('noise-freq');
 const noiseQInput = document.getElementById('noise-q');
 const drumVolInput = document.getElementById('drum-vol');
+const drumFillBtn = document.getElementById('drum-fill-btn');
+const drumFillControl = document.querySelector('.fill-control');
 const startBtn = document.getElementById('start-btn');
 
 const scaleSelect = document.getElementById('scale-select');
@@ -94,7 +72,7 @@ function renderMelodyTrail() {
     const trail = document.getElementById('melody-trail');
     const lastDrumIndex = state.drumTrail.length - 1;
     const drumEvents = state.drumTrail.map((event, index) => `
-        <span class="drum-mark drum-${event.type}${index === lastDrumIndex ? ' drum-mark-current' : ''}" style="--drum-x: ${event.x}; --drum-y: ${event.y}; --drum-size: ${event.size}" aria-label="${event.type}"></span>
+        <span class="drum-mark drum-${event.type}${event.isFill ? ' drum-fill' : ''}${index === lastDrumIndex ? ' drum-mark-current' : ''}" style="--drum-x: ${event.x}; --drum-y: ${event.y}; --drum-size: ${event.size}" aria-label="${event.type}"></span>
     `).join('');
     const melodyEvents = state.melodyTrail.map(event => `
         <span class="trail-note" style="--pitch-y: ${event.pitchY}; --note-size: ${event.size}" aria-label="${event.note}">
@@ -118,11 +96,15 @@ function pushMelodyTrail(note, noteIndex, durationInBeats, scaleLength) {
     renderMelodyTrail();
 }
 
-function pushDrumTrail(type, beatPosition) {
+function pushDrumTrail(type, beatPosition, isFill = false) {
     const props = {
         kick: { y: 0.82, size: 1 },
         snare: { y: 0.5, size: 0.82 },
-        hihat: { y: 0.2, size: 0.48 }
+        hihat: { y: 0.2, size: 0.48 },
+        'tom-low': { y: 0.68, size: 0.86 },
+        'tom-mid': { y: 0.42, size: 0.8 },
+        'tom-high': { y: 0.28, size: 0.74 },
+        crash: { y: 0.12, size: 1.08 }
     }[type];
     if (!props) return;
 
@@ -130,7 +112,8 @@ function pushDrumTrail(type, beatPosition) {
         type,
         x: Math.max(0, Math.min(1, beatPosition / Math.max(state.beatsPerBar, 1))),
         y: props.y,
-        size: props.size
+        size: props.size,
+        isFill
     });
     if (state.drumTrail.length > MAX_DRUM_TRAIL) {
         state.drumTrail.shift();
@@ -138,14 +121,22 @@ function pushDrumTrail(type, beatPosition) {
     renderMelodyTrail();
 }
 
-function playDrum(type, time, beatPosition) {
+function playDrum(type, time, beatPosition, isFill = false) {
     if (type === 'kick') {
         engine.playKick(time);
     } else if (type === 'snare') {
         engine.playSnare(time);
+    } else if (type === 'tom-low') {
+        engine.playTomLow(time);
+    } else if (type === 'tom-mid') {
+        engine.playTomMid(time);
+    } else if (type === 'tom-high') {
+        engine.playTomHigh(time);
+    } else if (type === 'crash') {
+        engine.playCrash(time);
     } else if (type === 'hihat-heavy') {
         engine.playHiHatHeavey(time);
-        pushDrumTrail('hihat', beatPosition);
+        pushDrumTrail('hihat', beatPosition, isFill);
         return;
     } else if (type === 'hihat') {
         engine.playHiHat(time);
@@ -153,7 +144,7 @@ function playDrum(type, time, beatPosition) {
         return;
     }
 
-    pushDrumTrail(type, beatPosition);
+    pushDrumTrail(type, beatPosition, isFill);
 }
 
 function pickDrumPattern(beatsPerBar) {
@@ -161,9 +152,52 @@ function pickDrumPattern(beatsPerBar) {
     return patterns[Math.floor(Math.random() * patterns.length)];
 }
 
+function pickDrumFill(beatsPerBar) {
+    const fills = DRUM_FILL_POOL[beatsPerBar] || DRUM_FILL_POOL.default;
+    return fills[Math.floor(Math.random() * fills.length)];
+}
+
+function setDrumFillUi(mode) {
+    drumFillControl.classList.toggle('is-queued', mode === 'queued');
+    drumFillControl.classList.toggle('is-active', mode === 'active');
+}
+
+function clearDrumFill() {
+    state.drumFillQueued = false;
+    state.drumFillActive = false;
+    state.drumFillPattern = {};
+    setDrumFillUi('idle');
+}
+
+function setDrumFillEnabled(isEnabled) {
+    state.isDrumFillEnabled = isEnabled;
+    drumFillBtn.checked = isEnabled;
+    state.drumFillBarsUntilAuto = AUTO_DRUM_FILL_INTERVAL_BARS;
+    if (!isEnabled) {
+        clearDrumFill();
+    }
+}
+
 function playDrumPatternStep(currentHalfBeatInBar, time) {
     if (currentHalfBeatInBar === 0) {
-        if (state.drumPatternBarsRemaining <= 0) {
+        if (state.drumFillActive) {
+            playDrum('crash', time, 0, true);
+            state.drumFillActive = false;
+            state.drumFillPattern = {};
+            setDrumFillUi('idle');
+        }
+
+        if (state.isDrumFillEnabled && !state.drumFillQueued) {
+            state.drumFillBarsUntilAuto -= 1;
+        }
+
+        if (state.isDrumFillEnabled && (state.drumFillQueued || state.drumFillBarsUntilAuto <= 0)) {
+            state.drumFillQueued = false;
+            state.drumFillActive = true;
+            state.drumFillPattern = pickDrumFill(state.beatsPerBar);
+            state.drumFillBarsUntilAuto = AUTO_DRUM_FILL_INTERVAL_BARS;
+            setDrumFillUi('active');
+        } else if (state.drumPatternBarsRemaining <= 0) {
             state.drumPattern = pickDrumPattern(state.beatsPerBar);
             state.drumPatternBarsRemaining = 2 + Math.floor(Math.random() * 3);
         } else {
@@ -171,9 +205,10 @@ function playDrumPatternStep(currentHalfBeatInBar, time) {
         }
     }
 
-    const hits = state.drumPattern[currentHalfBeatInBar] || [];
+    const pattern = state.drumFillActive ? state.drumFillPattern : state.drumPattern;
+    const hits = pattern[currentHalfBeatInBar] || [];
     hits.forEach(type => {
-        playDrum(type, time, currentHalfBeatInBar / 2);
+        playDrum(type, time, currentHalfBeatInBar / 2, state.drumFillActive);
     });
 }
 
@@ -478,6 +513,10 @@ function resetSchedulerTiming(offset = 0.12) {
 
 function stopSession() {
     state.isPlaying = false;
+    clearDrumFill();
+    state.isDrumFillEnabled = false;
+    drumFillBtn.checked = false;
+    state.drumFillBarsUntilAuto = AUTO_DRUM_FILL_INTERVAL_BARS;
 
     if (timerWorker) {
         timerWorker.postMessage("stop");
@@ -535,6 +574,7 @@ startBtn.addEventListener('click', async function() {
     stepIndex = 0; // 重置步进
     state.currentBeat = 0;
     state.currentChordKey = null; // 重置和弦
+    state.drumFillBarsUntilAuto = AUTO_DRUM_FILL_INTERVAL_BARS;
     clearVisualHistory();
 
     // --- 修改：启动 Web Worker ---
@@ -552,9 +592,24 @@ startBtn.addEventListener('click', async function() {
 // 新增：鼓组开关监听
 document.getElementById('drums-toggle').addEventListener('change', (e) => {
     state.isDrumsEnabled = e.target.checked;
+    if (!state.isDrumsEnabled) {
+        state.isDrumFillEnabled = false;
+        drumFillBtn.checked = false;
+        clearDrumFill();
+        state.drumFillBarsUntilAuto = AUTO_DRUM_FILL_INTERVAL_BARS;
+    }
 });
 
 drumVolInput.addEventListener('input', syncDrumVolume);
+
+drumFillBtn.addEventListener('change', () => {
+    if (!state.isPlaying || !state.isDrumsEnabled) {
+        setDrumFillEnabled(false);
+        return;
+    }
+
+    setDrumFillEnabled(drumFillBtn.checked);
+});
 
 // 新增：雨声开关监听
 document.getElementById('rain-toggle').addEventListener('change', (e) => {
@@ -630,6 +685,10 @@ document.getElementById('time-sig-select').addEventListener('change', (e) => {
     state.beatsPerBar = parseInt(e.target.value);
     state.drumPattern = {};
     state.drumPatternBarsRemaining = 0;
+    clearDrumFill();
+    state.isDrumFillEnabled = false;
+    drumFillBtn.checked = false;
+    state.drumFillBarsUntilAuto = AUTO_DRUM_FILL_INTERVAL_BARS;
     syncBeatUnit();
 });
 
