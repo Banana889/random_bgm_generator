@@ -69,6 +69,7 @@ const thunderToggle = document.getElementById('thunder-toggle');
 const thunderVolInput = document.getElementById('noise-vol');
 const thunderDistanceInput = document.getElementById('noise-freq');
 const noiseQInput = document.getElementById('noise-q');
+const drumVolInput = document.getElementById('drum-vol');
 const startBtn = document.getElementById('start-btn');
 
 const scaleSelect = document.getElementById('scale-select');
@@ -461,6 +462,12 @@ function syncThunderNoiseControls() {
     }
 }
 
+function syncDrumVolume() {
+    if (engine) {
+        engine.setDrumVolume(parseFloat(drumVolInput.value));
+    }
+}
+
 function stopSession() {
     state.isPlaying = false;
 
@@ -503,6 +510,7 @@ startBtn.addEventListener('click', async function() {
 
     if (!engine) engine = new AudioEngine();
     await engine.resume();
+    syncDrumVolume();
     console.log("Audio Context Started");
 
     // 新增：初始化雷声噪声生成器
@@ -539,6 +547,8 @@ startBtn.addEventListener('click', async function() {
 document.getElementById('drums-toggle').addEventListener('change', (e) => {
     state.isDrumsEnabled = e.target.checked;
 });
+
+drumVolInput.addEventListener('input', syncDrumVolume);
 
 // 新增：雨声开关监听
 document.getElementById('rain-toggle').addEventListener('change', (e) => {

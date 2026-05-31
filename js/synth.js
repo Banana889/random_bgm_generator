@@ -29,6 +29,7 @@ class AudioEngine {
         this.additiveSynths = []; 
         
         // 4. 鼓组 & 环境音
+        this.drumVolume = new Tone.Volume(0).toDestination();
         this.kick = new Tone.MembraneSynth({
             pitchDecay: 0.045,
             octaves: 3.5,
@@ -39,13 +40,13 @@ class AudioEngine {
                 sustain: 0,
                 release: 0.18
             }
-        }).toDestination();
+        }).connect(this.drumVolume);
         this.kick.volume.value = -7;
         this.snareFilter = new Tone.Filter({
             type: "bandpass",
             frequency: 2200,
             Q: 1
-        }).toDestination();
+        }).connect(this.drumVolume);
         this.snare = new Tone.NoiseSynth({
             noise: { type: "pink" },
             envelope: {
@@ -66,13 +67,13 @@ class AudioEngine {
                 sustain: 0,
                 release: 0.06
             }
-        }).toDestination();
+        }).connect(this.drumVolume);
         this.snareBody.volume.value = -7;
         this.hihatFilter = new Tone.Filter({
             type: "highpass",
             frequency: 6500,
             Q: 0.8
-        }).toDestination();
+        }).connect(this.drumVolume);
         this.hihat = new Tone.NoiseSynth({
             noise: { type: "white" },
             envelope: {
@@ -88,11 +89,12 @@ class AudioEngine {
             snare: "res/drums/snare.mp3",
             hihat: "res/drums/hihat.mp3",
             hihatHeavy: "res/drums/hihat-heavy.mp3"
-        }).toDestination();
+        }).connect(this.drumVolume);
         this.drumPlayers.player("kick").volume.value = -8;
         this.drumPlayers.player("snare").volume.value = -10;
         this.drumPlayers.player("hihat").volume.value = -18;
         this.drumPlayers.player("hihatHeavy").volume.value = -22;
+        this.setDrumVolume(0.5);
         this.rainNoise = new Tone.Noise("pink");
         this.rainFilter = new Tone.AutoFilter({ frequency: 0.1, depth: 0.5, baseFrequency: 600 }).start();
         this.rainVolume = new Tone.Volume(-Infinity);
@@ -112,6 +114,11 @@ class AudioEngine {
 
         // 5. 加载默认音色
         this.setInstrument("origin");
+    }
+    
+    setDrumVolume(value) {
+        const normalized = Math.max(0, Math.min(1, value));
+        this.drumVolume.volume.rampTo(normalized === 0 ? -Infinity : 20 * Math.log10(normalized * 2), 0.05);
     }
     
     // 加载音色
