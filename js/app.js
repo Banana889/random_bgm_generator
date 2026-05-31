@@ -587,13 +587,21 @@ document.getElementById('noise-q').addEventListener('input', (e) => {
 // BPM Control
 const bpmSlider = document.getElementById('bpm-slider');
 const bpmVal = document.getElementById('bpm-val');
+const beatUnit = document.getElementById('beat-unit');
 
 function syncBpmFromSlider() {
     state.bpm = parseInt(bpmSlider.value, 10);
     bpmVal.innerText = state.bpm;
 }
 
+function syncBeatUnit() {
+    const isEighthNoteBeat = state.beatsPerBar === 6;
+    beatUnit.innerText = isEighthNoteBeat ? '♪' : '♩';
+    beatUnit.title = isEighthNoteBeat ? 'One beat equals an eighth note' : 'One beat equals a quarter note';
+}
+
 syncBpmFromSlider();
+syncBeatUnit();
 bpmSlider.addEventListener('input', syncBpmFromSlider);
 bpmSlider.addEventListener('change', syncBpmFromSlider);
 
@@ -616,4 +624,5 @@ document.getElementById('time-sig-select').addEventListener('change', (e) => {
     state.beatsPerBar = parseInt(e.target.value);
     state.drumPattern = {};
     state.drumPatternBarsRemaining = 0;
+    syncBeatUnit();
 });
