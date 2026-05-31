@@ -1,0 +1,19 @@
+{
+  "name": "Driftone",
+  "short_name": "Driftone",
+  "description": "Generative ambient music and white noise, anchored in a tranquil harbor.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#071015",
+  "theme_color": "#071015",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "static/driftone-icon-1024.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

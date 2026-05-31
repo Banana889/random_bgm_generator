@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#071015">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Driftone">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>driftone: A Tranquil Harbor</title>
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/svg+xml" href="static/driftone-icon-1024.svg">
     <link rel="shortcut icon" href="static/driftone-icon-1024.svg">
     <link rel="apple-touch-icon" href="static/driftone-icon-1024.svg">
@@ -204,5 +209,12 @@
     <!-- Visuals -->
     <script src="js/visuals.js?v=thunder-visuals"></script>
     <script src="js/app.js?v=thunder-visuals"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js');
+            });
+        }
+    </script>
 </body>
 </html>
