@@ -1,6 +1,6 @@
 // --- 状态管理 ---
 const state = {
-    bpm: 80,
+    bpm: 65,
     beatsPerBar: 4, 
     currentPresetKey: 'c_major',
     
@@ -24,6 +24,7 @@ const state = {
 // --- 初始化 ---
 let engine; 
 let noiseGen; // 新增
+let toneLoadPromise = null;
 let nextBeatTime = 0; 
 let melodyBusyUntil = 0; // 新增：旋律忙碌截止时间，用于处理长音符 
 let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...) 
@@ -78,6 +79,21 @@ function pushMelodyTrail(note, noteIndex, durationInBeats, scaleLength) {
 function clearVisualHistory() {
     state.melodyTrail = [];
     renderMelodyTrail();
+}
+
+function loadTone() {
+    if (window.Tone) return Promise.resolve(window.Tone);
+    if (toneLoadPromise) return toneLoadPromise;
+
+    toneLoadPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js';
+        script.onload = () => resolve(window.Tone);
+        script.onerror = () => reject(new Error('Failed to load Tone.js'));
+        document.head.appendChild(script);
+    });
+
+    return toneLoadPromise;
 }
 
 // --- 核心逻辑 ---
@@ -182,7 +198,6 @@ function tick() {
 
     // --- 统一调度核心 (The Grid) ---
     while (nextBeatTime < now + 0.1) {
-        
         const isOnBeat = stepIndex % 2 === 0;
         const currentHalfBeatInBar = stepIndex % (state.beatsPerBar * 2);
         const currentBeatInBar = Math.floor(stepIndex / 2) % state.beatsPerBar;
@@ -230,7 +245,7 @@ function tick() {
         // 2. 和弦 (Chords) - 只在小节第一拍触发
         if (currentBeatInBar === 0 && isOnBeat) {
             const preset = PRESETS[state.currentPresetKey];
-            
+
             // 初始化 (如果是第一次播放)
             if (!state.currentChordKey) {
                 state.currentChordKey = preset.startChord;
@@ -239,7 +254,7 @@ function tick() {
             // 获取当前和弦数据
             const chord = preset.chords[state.currentChordKey];
             state.playingChord = chord; // 记录下来给旋律用
-            
+
             // UI 更新
             document.getElementById('chord-display').innerText = chord.name;
             document.getElementById('chord-detail').innerText = `Notes: ${chord.tones.join("-")}`;
@@ -248,7 +263,7 @@ function tick() {
             // 随机选择演奏方式：大部分时候是柱状(block)，偶尔扫弦(strum)或琶音(arpeggio)
             const styles = ["block", "block", "block", "strum", "arpeggio"];
             const style = styles[Math.floor(Math.random() * styles.length)];
-            
+
             engine.playPad(chord, nextBeatTime, style, beatDuration);
 
             // *** 关键：计算下一个和弦 (Graph Walk) ***
@@ -260,39 +275,38 @@ function tick() {
 
             // 只有在半拍点上才尝试更新乐句状态 (避免切分音中间打断)
             // 这里简化处理：每次尝试播放音符前，检查乐句状态
-            
+
             if (state.phraseState === 'RESTING') {
                 // 休息中，什么都不做，只消耗时间
                 melodyBusyUntil = nextBeatTime + stepDuration;
                 state.phraseBeatsRemaining -= 0.5; // 消耗半拍
                 updatePhraseState(); // 检查是否休息完了
-                
+
             } else {
                 // --- 演奏状态 ---
-                
+
                 // 1. 获取当前动机的下一个时值
                 if (state.currentMotif.length === 0) state.currentMotif = generateNewMotif(state.beatsPerBar);
-                
+
                 const durationInBeats = state.currentMotif[state.motifIndex];
                 const durationSeconds = beatDuration * durationInBeats;
 
                 // 2. 选音 (Pitch) - 修改：调用 NextNote 模块
                 const preset = PRESETS[state.currentPresetKey];
                 const selection = NextNote.pick_gohome(preset, state.playingChord, state.lastPlayedNoteIndex);
-                
+
                 state.lastPlayedNoteIndex = selection.index;
-                const freq = getFrequency(selection.note);
 
                 // todo 根据选音的结果，如果是稳定音，则适当延长时值
 
                 // 3. 播放
-                engine.playMelodyNote(freq, durationSeconds, nextBeatTime);
-                
+                engine.playMelodyNote(selection.note, durationSeconds, nextBeatTime);
+
                 // UI
                 document.getElementById('note-display').innerText = selection.note;
                 pushMelodyTrail(selection.note, selection.index, durationInBeats, preset.scale.length);
                 const logDiv = document.getElementById('log');
-                
+
                 // 获取当前和弦名称用于日志
                 const chordName = state.playingChord ? state.playingChord.name : "--";
                 const barSize = Math.min(durationInBeats / 2, 1);
@@ -312,10 +326,10 @@ function tick() {
 
                 // 4. 推进状态
                 melodyBusyUntil = nextBeatTime + durationSeconds;
-                
+
                 // 推进动机索引 (循环播放这个节奏型)
                 state.motifIndex = (state.motifIndex + 1) % state.currentMotif.length;
-                
+
                 // 消耗乐句剩余时间
                 state.phraseBeatsRemaining -= durationInBeats;
                 updatePhraseState(); // 检查乐句是否结束
@@ -410,20 +424,22 @@ startBtn.addEventListener('click', async function() {
         return;
     }
 
+    await loadTone();
     await Tone.start();
-    console.log("Audio Context Started");
 
     if (!engine) engine = new AudioEngine();
+    await engine.resume();
+    console.log("Audio Context Started");
+
     // 新增：初始化噪音生成器
     if (!noiseGen) noiseGen = new NoiseGenerator();
     syncRainNoiseControls();
-    
-    await engine.resume(); 
+
     state.isPlaying = true;
     startBtn.innerText = "End Session";
     startBtn.classList.add('is-ending');
     document.getElementById('main-ui').style.opacity = 1;
-    
+
     // 立即对齐时间
     const now = engine.getCurrentTime();
     nextBeatTime = now + 0.1; // 稍微延迟一点点开始，给音频引擎缓冲
@@ -432,7 +448,7 @@ startBtn.addEventListener('click', async function() {
     state.currentBeat = 0;
     state.currentChordKey = null; // 重置和弦
     clearVisualHistory();
-    
+
     // --- 修改：启动 Web Worker ---
     if (!timerWorker) {
         timerWorker = new Worker('js/worker.js');
@@ -483,10 +499,15 @@ document.getElementById('noise-q').addEventListener('input', (e) => {
 // BPM Control
 const bpmSlider = document.getElementById('bpm-slider');
 const bpmVal = document.getElementById('bpm-val');
-bpmSlider.addEventListener('input', (e) => {
-    state.bpm = parseInt(e.target.value);
+
+function syncBpmFromSlider() {
+    state.bpm = parseInt(bpmSlider.value, 10);
     bpmVal.innerText = state.bpm;
-});
+}
+
+syncBpmFromSlider();
+bpmSlider.addEventListener('input', syncBpmFromSlider);
+bpmSlider.addEventListener('change', syncBpmFromSlider);
 
 // Scale Control
 scaleSelect.addEventListener('change', (e) => {
