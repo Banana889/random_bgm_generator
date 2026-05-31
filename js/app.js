@@ -288,7 +288,7 @@ function tick() {
     if (!state.isPlaying) return;
 
     const now = engine.getCurrentTime();
-    const beatDuration = 60.0 / state.bpm; 
+    const beatDuration = state.beatsPerBar === 6 ? (60.0 / state.bpm) / 3 : 60.0 / state.bpm; 
     const stepDuration = beatDuration / 2; 
     
     // 移动端后台会节流 JS。恢复时不要补打过期事件，否则容易出现毛刺/沙沙声。
@@ -601,9 +601,9 @@ function syncBpmFromSlider() {
 }
 
 function syncBeatUnit() {
-    const isEighthNoteBeat = state.beatsPerBar === 6;
-    beatUnit.innerText = isEighthNoteBeat ? '♪' : '♩';
-    beatUnit.title = isEighthNoteBeat ? 'One beat equals an eighth note' : 'One beat equals a quarter note';
+    const isDottedQuarterBeat = state.beatsPerBar === 6;
+    beatUnit.innerText = isDottedQuarterBeat ? '♩.' : '♩';
+    beatUnit.title = isDottedQuarterBeat ? 'One beat equals a dotted quarter note' : 'One beat equals a quarter note';
 }
 
 syncBpmFromSlider();
