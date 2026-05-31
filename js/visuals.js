@@ -9,6 +9,11 @@ class RainVisualizer {
         this.intensity = 0;
         this.tone = 400;
         this.wind = 0;
+        this.thunderEnabled = false;
+        this.thunderIntensity = 0;
+        this.thunderDistance = 0.9;
+        this.lightning = null;
+        this.nextLightningAt = 0;
         
         // 响应窗口大小变化
         this.resize();
@@ -33,6 +38,80 @@ class RainVisualizer {
     setWind(val) {
         // Wind 不直接做物理模拟，只作为横向漂移强度
         this.wind = Math.max(0, Math.min(40, val));
+    }
+
+    setThunder(enable, intensity, distance) {
+        this.thunderEnabled = enable;
+        this.thunderIntensity = Math.max(0, Math.min(1, intensity));
+        this.thunderDistance = Math.max(0, Math.min(1, distance));
+
+        if (enable && this.thunderIntensity > 0 && !this.animationFrameId) {
+            this.draw();
+        }
+    }
+
+    createLightning(now) {
+        const distance = this.thunderDistance;
+        const intensity = this.thunderIntensity;
+        const startX = this.canvas.width * (0.18 + Math.random() * 0.64);
+        const startY = this.canvas.height * (0.04 + Math.random() * 0.18);
+        const segmentCount = Math.floor(4 + intensity * 5 + Math.random() * 3);
+        const maxLength = this.canvas.height * (0.16 + (1 - distance) * 0.24 + intensity * 0.12);
+        const points = [{ x: startX, y: startY }];
+
+        for (let i = 1; i <= segmentCount; i++) {
+            const progress = i / segmentCount;
+            const jitter = (1 - distance) * 52 + intensity * 26;
+            points.push({
+                x: startX + (Math.random() - 0.5) * jitter * i,
+                y: startY + maxLength * progress
+            });
+        }
+
+        this.lightning = {
+            points,
+            createdAt: now,
+            duration: 140 + intensity * 130,
+            alpha: 0.18 + intensity * 0.48 + (1 - distance) * 0.2,
+            width: 1 + intensity * 2.2 + (1 - distance) * 1.2,
+            flash: 0.04 + intensity * 0.18 + (1 - distance) * 0.16
+        };
+    }
+
+    drawLightning(now) {
+        if (!this.lightning) return;
+
+        const age = now - this.lightning.createdAt;
+        if (age > this.lightning.duration) {
+            this.lightning = null;
+            return;
+        }
+
+        const fade = 1 - age / this.lightning.duration;
+        const flashAlpha = this.lightning.flash * fade;
+
+        this.ctx.save();
+        this.ctx.globalAlpha = flashAlpha;
+        this.ctx.fillStyle = 'rgb(220, 238, 255)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.ctx.globalAlpha = this.lightning.alpha * fade;
+        this.ctx.strokeStyle = 'rgb(232, 246, 255)';
+        this.ctx.lineWidth = this.lightning.width;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.shadowBlur = 18 + this.lightning.width * 6;
+        this.ctx.shadowColor = 'rgba(194, 226, 255, 0.9)';
+        this.ctx.beginPath();
+        this.lightning.points.forEach((point, index) => {
+            if (index === 0) {
+                this.ctx.moveTo(point.x, point.y);
+            } else {
+                this.ctx.lineTo(point.x, point.y);
+            }
+        });
+        this.ctx.stroke();
+        this.ctx.restore();
     }
 
     createDrop() {
@@ -65,7 +144,11 @@ class RainVisualizer {
     }
 
     draw() {
-        if (!this.isRunning && this.drops.length === 0) {
+        const now = performance.now();
+
+        const hasThunder = this.thunderEnabled && this.thunderIntensity > 0;
+
+        if (!this.isRunning && this.drops.length === 0 && !this.lightning && !hasThunder) {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.animationFrameId = null;
             return;
@@ -107,6 +190,17 @@ class RainVisualizer {
         if (this.isSpawning) {
             this.createDrop();
         }
+
+        if (hasThunder) {
+            if (now >= this.nextLightningAt) {
+                this.createLightning(now);
+                const distanceDelay = 1800 + this.thunderDistance * 3200;
+                const intensityDelay = (1 - this.thunderIntensity) * 2200;
+                this.nextLightningAt = now + distanceDelay + intensityDelay + Math.random() * 2600;
+            }
+            this.drawLightning(now);
+        }
+
         this.ctx.globalAlpha = 1;
         this.animationFrameId = requestAnimationFrame(() => this.draw());
     }

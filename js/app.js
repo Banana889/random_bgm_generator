@@ -32,8 +32,9 @@ let timerWorker = null; // 新增：Worker 实例
 const MAX_MELODY_TRAIL = 12;
 
 const rainToggle = document.getElementById('rain-toggle');
-const noiseVolInput = document.getElementById('noise-vol');
-const noiseFreqInput = document.getElementById('noise-freq');
+const thunderToggle = document.getElementById('thunder-toggle');
+const thunderVolInput = document.getElementById('noise-vol');
+const thunderDistanceInput = document.getElementById('noise-freq');
 const noiseQInput = document.getElementById('noise-q');
 const startBtn = document.getElementById('start-btn');
 
@@ -363,31 +364,36 @@ document.querySelectorAll('.tab-button').forEach(button => {
     });
 });
 
-function syncRainNoiseControls() {
+function syncThunderNoiseControls() {
     const isRainEnabled = rainToggle.checked;
-    const vol = parseFloat(noiseVolInput.value);
-    const freq = parseFloat(noiseFreqInput.value);
-    const q = parseFloat(noiseQInput.value);
+    const isThunderEnabled = thunderToggle.checked;
+    const vol = parseFloat(thunderVolInput.value);
+    const distance = parseFloat(thunderDistanceInput.value);
+    const freq = 3000 - distance * 2900;
+    const character = parseFloat(noiseQInput.value);
 
     if (noiseGen) {
         // 2. 频率控制 (Tone)
         noiseGen.setFilterFreq(freq);
 
-        // 3. Q值控制 (Wind)
-        noiseGen.setFilterQ(q);
+        // 3. Character 控制：低值偏雷声，高值偏风声。
+        noiseGen.setFilterQ(character);
         // 当 Q 值很高时，切换到带通滤波器，风声更逼真
-        noiseGen.setType(q > 5 ? 'bandpass' : 'lowpass');
+        noiseGen.setType(character > 5 ? 'bandpass' : 'lowpass');
 
-        // 1. 音量控制
-        noiseGen.setVolume(isRainEnabled ? vol : 0);
+        // 雷声/噪声独立于雨层开关，但跟随 Session 生命周期和雷声开关。
+        noiseGen.setVolume(state.isPlaying && isThunderEnabled ? vol : 0);
     }
 
     if (visuals) {
-        // 联动视觉参数，但只有总开关打开时才真正显示雨
-        visuals.setIntensity(vol);
-        visuals.setTone(freq);
-        visuals.setWind(q * 2);
-        visuals.toggle(isRainEnabled && vol > 0.05);
+        // 雨视觉只跟随雨层开关，不再被雷声音量滑块关掉。
+        visuals.setIntensity(isRainEnabled ? 0.45 : 0);
+        visuals.setTone(400);
+        visuals.setWind(character * 2);
+        visuals.toggle(isRainEnabled);
+        if (typeof visuals.setThunder === 'function') {
+            visuals.setThunder(state.isPlaying && isThunderEnabled, vol, distance);
+        }
     }
 }
 
@@ -407,7 +413,11 @@ function stopSession() {
         rainToggle.checked = false;
     }
 
-    syncRainNoiseControls();
+    if (thunderToggle) {
+        thunderToggle.checked = false;
+    }
+
+    syncThunderNoiseControls();
     startBtn.innerText = "Start Session";
     startBtn.classList.remove('is-ending');
     document.getElementById('main-ui').style.opacity = 0.34;
@@ -431,11 +441,11 @@ startBtn.addEventListener('click', async function() {
     await engine.resume();
     console.log("Audio Context Started");
 
-    // 新增：初始化噪音生成器
+    // 新增：初始化雷声噪声生成器
     if (!noiseGen) noiseGen = new NoiseGenerator();
-    syncRainNoiseControls();
 
     state.isPlaying = true;
+    syncThunderNoiseControls();
     startBtn.innerText = "End Session";
     startBtn.classList.add('is-ending');
     document.getElementById('main-ui').style.opacity = 1;
@@ -475,25 +485,29 @@ document.getElementById('rain-toggle').addEventListener('change', (e) => {
         engine.toggleRain(isEnabled);
     }
 
-    // 2. 控制视觉和噪音总开关
-    syncRainNoiseControls();
+    // 2. 控制雨视觉并同步雷声参数
+    syncThunderNoiseControls();
 });
 
-// --- 噪音控制事件监听 ---
+// --- 雷声控制事件监听 ---
+
+document.getElementById('thunder-toggle').addEventListener('change', (e) => {
+    syncThunderNoiseControls();
+});
 
 // 1. 音量控制
 document.getElementById('noise-vol').addEventListener('input', (e) => {
-    syncRainNoiseControls();
+    syncThunderNoiseControls();
 });
 
-// 2. 频率控制 (Tone)
+// 2. 距离控制，越远越低沉
 document.getElementById('noise-freq').addEventListener('input', (e) => {
-    syncRainNoiseControls();
+    syncThunderNoiseControls();
 });
 
-// 3. Q值控制 (Wind)
+// 3. Character 控制：Thunder 到 Wind
 document.getElementById('noise-q').addEventListener('input', (e) => {
-    syncRainNoiseControls();
+    syncThunderNoiseControls();
 });
 
 // BPM Control

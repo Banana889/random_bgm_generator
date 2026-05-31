@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="static/driftone-icon-1024.svg">
     <link rel="shortcut icon" href="static/driftone-icon-1024.svg">
     <link rel="apple-touch-icon" href="static/driftone-icon-1024.svg">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=thunder-visuals">
     <style>
         /* Rain canvas stays behind the UI and does not block clicks. */
         #rain-canvas {
@@ -128,7 +128,7 @@
                 <div class="tab-panel" id="tab-ambience" role="tabpanel" data-panel="ambience" hidden>
                     <div class="control-section">
                         <div class="section-heading">
-                            <span class="section-label">WEATHER</span>
+                            <span class="section-label">RAIN</span>
                             <p>Enable the ambient rain layer.</p>
                         </div>
                         <div class="control-group inline-control">
@@ -142,21 +142,40 @@
 
                     <div class="control-section">
                         <div class="section-heading">
-                            <span class="section-label">TEXTURE</span>
-                            <p>Balance volume, brightness, and wind resonance.</p>
+                            <span class="section-label">STORM</span>
+                            <p>Shape thunder intensity, distance, and thunder-to-wind character.</p>
+                        </div>
+                        <div class="control-group inline-control">
+                            <label>Storm AMBITENCE</label>
+                            <label class="switch">
+                                <input type="checkbox" id="thunder-toggle">
+                                <span class="slider round"></span>
+                            </label>
                         </div>
                         <div class="ambience-stack">
                             <div class="range-row">
-                                <label>Rain Vol</label>
-                                <input type="range" id="noise-vol" min="0" max="1" step="0.01" value="0">
+                                <label>Intensity</label>
+                                <div class="range-control">
+                                    <span aria-hidden="true"></span>
+                                    <input type="range" id="noise-vol" min="0" max="1" step="0.01" value="0.18">
+                                    <span aria-hidden="true"></span>
+                                </div>
                             </div>
                             <div class="range-row">
-                                <label>Tone</label>
-                                <input type="range" id="noise-freq" min="100" max="3000" step="10" value="400">
+                                <label>Distance</label>
+                                <div class="range-control">
+                                    <span aria-hidden="true"></span>
+                                    <input type="range" id="noise-freq" min="0" max="1" step="0.01" value="0.9">
+                                    <span aria-hidden="true"></span>
+                                </div>
                             </div>
                             <div class="range-row">
-                                <label>Wind</label>
-                                <input type="range" id="noise-q" min="0" max="20" step="0.1" value="0">
+                                <label>Character</label>
+                                <div class="range-control character-slider" aria-label="Thunder to wind character">
+                                    <span title="Thunder">⚡</span>
+                                    <input type="range" id="noise-q" min="0" max="20" step="0.1" value="0">
+                                    <span title="Wind">༄</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -179,7 +198,7 @@
     <script src="js/noise_generator.js"></script>
     <script src="js/nextnote.js"></script>
     <!-- Visuals -->
-    <script src="js/visuals.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/visuals.js?v=thunder-visuals"></script>
+    <script src="js/app.js?v=thunder-visuals"></script>
 </body>
 </html>

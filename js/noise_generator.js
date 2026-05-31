@@ -52,7 +52,7 @@ class NoiseGenerator {
     }
 
     initAudioGraph() {
-        // 1. 源节点 (Source) - 使用 Brown Noise 作为基础，因为它最适合做雨声/风声
+        // 1. 源节点 (Source) - 使用 Brown Noise 作为基础，因为它适合做雷声/风声
         this.source = this.ctx.createBufferSource();
         this.source.buffer = this.brownBuffer;
         this.source.loop = true;

@@ -246,9 +246,31 @@ input[type="range"] {
 
 .range-row {
     display: grid;
-    grid-template-columns: 90px 1fr;
+    grid-template-columns: 86px minmax(0, 1fr);
     align-items: center;
     gap: 14px;
+}
+
+.range-row label {
+    white-space: nowrap;
+}
+
+.range-control {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) 16px;
+    align-items: center;
+    gap: 6px;
+}
+
+.range-control input[type="range"] {
+    grid-column: 2;
+}
+
+.range-control span {
+    color: var(--accent);
+    font-size: 0.86rem;
+    letter-spacing: 0.08em;
+    text-align: center;
 }
 
 .session-actions {
