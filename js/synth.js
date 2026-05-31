@@ -92,7 +92,7 @@ class AudioEngine {
         this.drumPlayers.player("kick").volume.value = -8;
         this.drumPlayers.player("snare").volume.value = -10;
         this.drumPlayers.player("hihat").volume.value = -18;
-        this.drumPlayers.player("hihatHeavy").volume.value = -16;
+        this.drumPlayers.player("hihatHeavy").volume.value = -22;
         this.rainNoise = new Tone.Noise("pink");
         this.rainFilter = new Tone.AutoFilter({ frequency: 0.1, depth: 0.5, baseFrequency: 600 }).start();
         this.rainVolume = new Tone.Volume(-Infinity);

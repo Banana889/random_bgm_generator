@@ -14,6 +14,8 @@ const state = {
     currentBeat: 0,
     melodyTrail: [],
     drumTrail: [],
+    drumPattern: {},
+    drumPatternBarsRemaining: 0,
     
     // --- 新增：乐句与动机状态 ---
     phraseState: 'PLAYING', // 'PLAYING' | 'RESTING'
@@ -32,6 +34,35 @@ let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...)
 let timerWorker = null; // 新增：Worker 实例
 const MAX_MELODY_TRAIL = 12;
 const MAX_DRUM_TRAIL = 28;
+
+const DRUM_PATTERN_POOL = {
+    3: [
+        // Waltz: kick on 1, snares on 2 and 3.
+        { 0: ['kick', 'hihat'], 2: ['snare', 'hihat'], 4: ['snare', 'hihat'] },
+        // 3/4 eighth-note variation with light offbeats.
+        { 0: ['kick', 'hihat'], 1: ['hihat'], 2: ['snare'], 3: ['hihat'], 4: ['snare'], 5: ['hihat'] },
+        // Country waltz-style variation with an extra beat-3 kick.
+        { 0: ['kick'], 1: ['hihat'], 2: ['snare', 'hihat'], 4: ['kick', 'snare'], 5: ['hihat'] }
+    ],
+    6: [
+        // Basic 6/8: kick on count 1, snare on count 4, hats on all counts.
+        { 0: ['kick', 'hihat'], 2: ['hihat'], 4: ['hihat'], 6: ['snare', 'hihat'], 8: ['hihat'], 10: ['hihat'] },
+        // 6/8 variation with an added kick on count 3 before the snare.
+        { 0: ['kick', 'hihat'], 2: ['hihat'], 4: ['kick', 'hihat'], 6: ['snare', 'hihat'], 8: ['hihat'], 10: ['hihat'] },
+        // 6/8 variation with an extra snare on count 6.
+        { 0: ['kick'], 2: ['hihat'], 4: ['kick', 'hihat'], 6: ['snare', 'hihat'], 8: ['hihat'], 10: ['snare', 'hihat'] }
+    ],
+    default: [
+        // Basic rock: eighth-note hats, kick on 1/3, snare on 2/4.
+        { 0: ['kick', 'hihat'], 1: ['hihat'], 2: ['snare', 'hihat'], 3: ['hihat'], 4: ['kick', 'hihat'], 5: ['hihat'], 6: ['snare', 'hihat'], 7: ['hihat'] },
+        // Four-on-the-floor/disco: kick every quarter, snare on 2/4.
+        { 0: ['kick', 'hihat'], 1: ['hihat'], 2: ['kick', 'snare', 'hihat'], 3: ['hihat'], 4: ['kick', 'hihat'], 5: ['hihat'], 6: ['kick', 'snare', 'hihat'], 7: ['hihat'] },
+        // Funk-style syncopation: offbeat kick around the backbeat.
+        { 0: ['kick', 'hihat'], 1: ['hihat'], 2: ['snare', 'hihat'], 3: ['kick', 'hihat'], 4: ['hihat'], 5: ['snare', 'hihat'], 6: ['snare'], 7: ['kick', 'hihat'] },
+        // Half-time feel: strong kick on 1, main snare on 3.
+        { 0: ['kick', 'hihat'], 1: ['hihat'], 2: ['hihat'], 3: ['kick', 'hihat'], 4: ['snare', 'hihat'], 5: ['hihat'], 6: ['kick', 'hihat'], 7: ['hihat'] }
+    ]
+};
 
 const rainToggle = document.getElementById('rain-toggle');
 const thunderToggle = document.getElementById('thunder-toggle');
@@ -121,6 +152,27 @@ function playDrum(type, time, beatPosition) {
     }
 
     pushDrumTrail(type, beatPosition);
+}
+
+function pickDrumPattern(beatsPerBar) {
+    const patterns = DRUM_PATTERN_POOL[beatsPerBar] || DRUM_PATTERN_POOL.default;
+    return patterns[Math.floor(Math.random() * patterns.length)];
+}
+
+function playDrumPatternStep(currentHalfBeatInBar, time) {
+    if (currentHalfBeatInBar === 0) {
+        if (state.drumPatternBarsRemaining <= 0) {
+            state.drumPattern = pickDrumPattern(state.beatsPerBar);
+            state.drumPatternBarsRemaining = 2 + Math.floor(Math.random() * 3);
+        } else {
+            state.drumPatternBarsRemaining -= 1;
+        }
+    }
+
+    const hits = state.drumPattern[currentHalfBeatInBar] || [];
+    hits.forEach(type => {
+        playDrum(type, time, currentHalfBeatInBar / 2);
+    });
 }
 
 function clearVisualHistory() {
@@ -252,44 +304,7 @@ function tick() {
 
         // 1. 鼓组 (Drums)
         if (state.isDrumsEnabled) {
-            const beatPosition = currentBeatInBar + (isOnBeat ? 0 : 0.5);
-
-            if (state.beatsPerBar === 3) {
-                if (isOnBeat) {
-                    if (currentBeatInBar === 0) {
-                        playDrum('kick', nextBeatTime, beatPosition);
-                        playDrum('hihat-heavy', nextBeatTime, beatPosition);
-                    } else {
-                        playDrum('snare', nextBeatTime, beatPosition);
-                        playDrum('hihat', nextBeatTime, beatPosition);
-                    }
-                }
-            } else if (state.beatsPerBar === 6) {
-                if (currentHalfBeatInBar === 0) {
-                    playDrum('kick', nextBeatTime, beatPosition);
-                    playDrum('hihat-heavy', nextBeatTime, beatPosition);
-                } else if (currentHalfBeatInBar === 6) {
-                    playDrum('kick', nextBeatTime, beatPosition);
-                    playDrum('hihat', nextBeatTime, beatPosition);
-                } else if (currentHalfBeatInBar === 8) {
-                    playDrum('snare', nextBeatTime, beatPosition);
-                } else if (currentHalfBeatInBar % 2 === 0) {
-                    playDrum('hihat', nextBeatTime, beatPosition);
-                }
-            } else {
-                const isBackbeat = currentBeatInBar === 1 || currentBeatInBar === 3;
-                const isDownbeat = currentBeatInBar === 0 || currentBeatInBar === 2;
-
-                if (isOnBeat && isDownbeat) {
-                    playDrum('kick', nextBeatTime, beatPosition);
-                }
-
-                if (isOnBeat && isBackbeat) {
-                    playDrum('snare', nextBeatTime, beatPosition);
-                }
-
-                playDrum('hihat', nextBeatTime, beatPosition);
-            }
+            playDrumPatternStep(currentHalfBeatInBar, nextBeatTime);
         }
 
         // 2. 和弦 (Chords) - 只在小节第一拍触发
@@ -589,4 +604,6 @@ instrumentSelect.addEventListener('change', (e) => {
 // Time Sig Control
 document.getElementById('time-sig-select').addEventListener('change', (e) => {
     state.beatsPerBar = parseInt(e.target.value);
+    state.drumPattern = {};
+    state.drumPatternBarsRemaining = 0;
 });
