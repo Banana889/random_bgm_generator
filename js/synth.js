@@ -124,7 +124,9 @@ class AudioEngine {
         // 情况 A: 自定义加法合成 (如 Wind Bell)
         if (preset.lead.type === "customAdditive") {
             // 清理旧的加法合成器
-            this.additiveSynths.forEach(s => s.dispose());
+            this.additiveSynths.forEach(s => {
+                s.dispose();
+            });
             this.additiveSynths = [];
 
             // 为每个谐波创建一个 PolySynth
@@ -147,7 +149,9 @@ class AudioEngine {
         // 情况 B: 标准合成器 (标准流程)
         else {
             // 确保清理加法合成器以节省性能
-            this.additiveSynths.forEach(s => s.dispose());
+            this.additiveSynths.forEach(s => {
+                s.dispose();
+            });
             this.additiveSynths = [];
 
             const { volume: leadVolume, ...leadParams } = preset.lead;
@@ -246,6 +250,14 @@ class AudioEngine {
             // 标准触发
             this.leadSynth.triggerAttackRelease(freq, duration, time, velocity);
         }
+    }
+
+    stopAll(time = Tone.now()) {
+        this.padSynth.releaseAll(time);
+        this.leadSynth.releaseAll(time);
+        this.additiveSynths.forEach(synth => {
+            synth.releaseAll(time);
+        });
     }
 
     playKick(time) {

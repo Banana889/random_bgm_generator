@@ -9,116 +9,179 @@
     <link rel="apple-touch-icon" href="static/driftone-icon-1024.svg">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* 新增：雨滴 Canvas 样式，覆盖全屏但不阻挡点击 */
+        /* Rain canvas stays behind the UI and does not block clicks. */
         #rain-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1; /* 放在背景层 */
-            pointer-events: none; /* 让鼠标事件穿透 */
+            z-index: -1;
+            pointer-events: none;
             opacity: 0.6;
         }
     </style>
 </head>
 <body>
-    <!-- 新增 Canvas -->
+    <!-- Rain canvas -->
     <canvas id="rain-canvas"></canvas>
 
-    <div class="controls-top">
-        <div class="control-group">
-            <label>MODE / SCALE</label>
-            <select id="scale-select">
-                <!-- 动态生成 -->
-            </select>
-        </div>
-
-        <!-- 新增：音色选择 -->
-        <div class="control-group">
-            <label>SOUND</label>
-            <select id="instrument-select">
-                <!-- JS填充 -->
-            </select>
-        </div>
-        <div class="control-group">
-            <label>TIME SIG</label>
-            <select id="time-sig-select">
-                <option value="4">4/4</option>
-                <option value="3">3/4</option>
-                <option value="6">6/8</option>
-            </select>
-        </div>
-        <!-- 鼓组开关 -->
-        <div class="control-group">
-            <label>DRUMS</label>
-            <input type="checkbox" id="drums-toggle">
-        </div>
-        <div class="control-group">
-            <label>BPM: <span id="bpm-val">65</span></label>
-            <input type="range" id="bpm-slider" min="40" max="160" value="65">
-        </div>
-    </div>
-    <div class="controls-bottom">
-        <!-- 雨声开关 -->
-        <div class="control-group">
-            <label>Rain Ambience</label>
-            <label class="switch">
-                <input type="checkbox" id="rain-toggle">
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <!-- 新增：噪音控制面板 -->
-        <div class="control-group" style="flex-direction: column; align-items: flex-start; gap: 10px; margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; width: 100%;">
-            <label style="color: #888; font-size: 12px; margin-bottom: 5px;">AMBIENCE CONTROL</label>
-
-            <!-- 音量 -->
-            <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
-                <label style="font-size: 12px;">Rain Vol</label>
-                <input type="range" id="noise-vol" min="0" max="1" step="0.01" value="0" style="width: 60%;">
+    <main class="app-shell">
+        <section class="output-panel" aria-label="Session output">
+            <div class="panel-header">
+                <div class="brand-lockup">
+                    <img src="static/driftone-icon-1024.svg" alt="Driftone logo" class="brand-logo">
+                    <h1>Driftone</h1>
+                </div>
+                <p>Generative ambient music and white noise, anchored in a tranquil harbor.</p>
             </div>
 
-            <!-- 频率 (雨的大小/颜色) -->
-            <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
-                <label style="font-size: 12px;">Tone</label>
-                <input type="range" id="noise-freq" min="100" max="3000" step="10" value="400" style="width: 60%;">
+            <div class="display-area" id="main-ui">
+                <div class="chord-box">
+                    <h3>CURRENT CHORD</h3>
+                    <h1 id="chord-display">--</h1>
+                    <div id="chord-detail">Waiting...</div>
+                </div>
+                <div class="chord-box">
+                    <h3>MELODY NOTE</h3>
+                    <h1 id="note-display">--</h1>
+                </div>
             </div>
 
-            <!-- Q值 (风声/共振) -->
-            <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
-                <label style="font-size: 12px;">Wind</label>
-                <input type="range" id="noise-q" min="0" max="20" step="0.1" value="0" style="width: 60%;">
+            <div class="melody-trail" aria-label="Melody trail">
+                <div class="trail-stage" id="melody-trail"></div>
+            </div>
+
+            <div id="log"></div>
+        </section>
+
+        <div class="right-stack">
+            <section class="control-panel" aria-label="Session controls">
+
+            <div class="tab-list" role="tablist" aria-label="Control sections">
+                <button class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="tab-melody" data-tab="melody">Melody</button>
+                <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="tab-rhythm" data-tab="rhythm">Rhythm</button>
+                <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="tab-ambience" data-tab="ambience">Ambience</button>
+            </div>
+
+            <div class="tab-panels">
+                <div class="tab-panel active" id="tab-melody" role="tabpanel" data-panel="melody">
+                    <div class="control-section">
+                        <div class="section-heading">
+                            <span class="section-label">HARMONY</span>
+                            <p>Choose the tonal world and chord graph.</p>
+                        </div>
+                        <div class="control-group">
+                            <label>MODE / SCALE</label>
+                            <select id="scale-select">
+                                <!-- Generated by app.js -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="control-section">
+                        <div class="section-heading">
+                            <span class="section-label">TIMBRE</span>
+                            <p>Shape the lead and pad instrument color.</p>
+                        </div>
+                        <div class="control-group">
+                            <label>SOUND / TIMBRE</label>
+                            <select id="instrument-select">
+                                <!-- Generated by app.js -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="tab-rhythm" role="tabpanel" data-panel="rhythm" hidden>
+                    <div class="control-section">
+                        <div class="section-heading">
+                            <span class="section-label">METER</span>
+                            <p>Set the grid that drives phrases and chords.</p>
+                        </div>
+                        <div class="control-group">
+                            <label>TIME SIG</label>
+                            <select id="time-sig-select">
+                                <option value="4">4/4</option>
+                                <option value="3">3/4</option>
+                                <option value="6">6/8</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="control-section">
+                        <div class="section-heading">
+                            <span class="section-label">PULSE</span>
+                            <p>Control the tempo and percussion layer.</p>
+                        </div>
+                        <div class="control-group inline-control">
+                            <label>DRUMS</label>
+                            <input type="checkbox" id="drums-toggle">
+                        </div>
+                        <div class="control-group">
+                            <label>BPM: <span id="bpm-val">65</span></label>
+                            <input type="range" id="bpm-slider" min="40" max="160" value="65">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="tab-ambience" role="tabpanel" data-panel="ambience" hidden>
+                    <div class="control-section">
+                        <div class="section-heading">
+                            <span class="section-label">WEATHER</span>
+                            <p>Enable the ambient rain layer.</p>
+                        </div>
+                        <div class="control-group inline-control">
+                            <label>Rain Ambience</label>
+                            <label class="switch">
+                                <input type="checkbox" id="rain-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="control-section">
+                        <div class="section-heading">
+                            <span class="section-label">TEXTURE</span>
+                            <p>Balance volume, brightness, and wind resonance.</p>
+                        </div>
+                        <div class="ambience-stack">
+                            <div class="range-row">
+                                <label>Rain Vol</label>
+                                <input type="range" id="noise-vol" min="0" max="1" step="0.01" value="0">
+                            </div>
+                            <div class="range-row">
+                                <label>Tone</label>
+                                <input type="range" id="noise-freq" min="100" max="3000" step="10" value="400">
+                            </div>
+                            <div class="range-row">
+                                <label>Wind</label>
+                                <input type="range" id="noise-q" min="0" max="20" step="0.1" value="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </section>
+
+            <div class="session-actions" aria-label="Session actions">
+                <button id="start-btn" type="button">Start Session</button>
             </div>
         </div>
-    </div>
 
-    <div class="display-area" id="main-ui">
-        <div class="chord-box">
-            <h3>CURRENT CHORD</h3>
-            <h1 id="chord-display">--</h1>
-            <div id="chord-detail">Waiting...</div>
-        </div>
-        <div class="chord-box">
-            <h3>MELODY NOTE</h3>
-            <h1 id="note-display">--</h1>
-        </div>
-    </div>
+    </main>
 
-    <button id="start-btn">Start Session</button>
-
-    <div id="log"></div>
-
-    <!-- 引入 Tone.js -->
+    <!-- Tone.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 
-    <!-- 按顺序加载脚本 -->
+    <!-- Scripts load in dependency order. -->
     <script src="js/data.js"></script>
     <script src="js/instruments.js"></script>
     <script src="js/synth.js"></script>
 
     <script src="js/noise_generator.js"></script>
     <script src="js/nextnote.js"></script>
-    <!-- 新增：视觉脚本 -->
+    <!-- Visuals -->
     <script src="js/visuals.js"></script>
     <script src="js/app.js"></script>
     <script src="js/worker.js"></script>

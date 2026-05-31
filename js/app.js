@@ -12,6 +12,7 @@ const state = {
     isPlaying: false,
     isDrumsEnabled: false, 
     currentBeat: 0,
+    melodyTrail: [],
     
     // --- 新增：乐句与动机状态 ---
     phraseState: 'PLAYING', // 'PLAYING' | 'RESTING'
@@ -27,11 +28,13 @@ let nextBeatTime = 0;
 let melodyBusyUntil = 0; // 新增：旋律忙碌截止时间，用于处理长音符 
 let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...) 
 let timerWorker = null; // 新增：Worker 实例
+const MAX_MELODY_TRAIL = 12;
 
 const rainToggle = document.getElementById('rain-toggle');
 const noiseVolInput = document.getElementById('noise-vol');
 const noiseFreqInput = document.getElementById('noise-freq');
 const noiseQInput = document.getElementById('noise-q');
+const startBtn = document.getElementById('start-btn');
 
 const scaleSelect = document.getElementById('scale-select');
 Object.keys(PRESETS).forEach(key => {
@@ -50,6 +53,33 @@ Object.keys(INSTRUMENT_PRESETS).forEach(key => {
     instrumentSelect.appendChild(option);
 });
 
+function renderMelodyTrail() {
+    const trail = document.getElementById('melody-trail');
+    trail.innerHTML = state.melodyTrail.map(event => `
+        <span class="trail-note" style="--pitch-y: ${event.pitchY}; --note-size: ${event.size}" aria-label="${event.note}">
+            <span class="note-head"></span>
+            <span class="note-tail"></span>
+        </span>
+    `).join('');
+}
+
+function pushMelodyTrail(note, noteIndex, durationInBeats, scaleLength) {
+    state.melodyTrail.push({
+        note,
+        pitchY: Math.max(0, Math.min(1, noteIndex / Math.max(scaleLength - 1, 1))),
+        size: Math.min(durationInBeats / 2, 1)
+    });
+    if (state.melodyTrail.length > MAX_MELODY_TRAIL) {
+        state.melodyTrail.shift();
+    }
+    renderMelodyTrail();
+}
+
+function clearVisualHistory() {
+    state.melodyTrail = [];
+    renderMelodyTrail();
+}
+
 // --- 核心逻辑 ---
 
 // 新增：基于权重的图游走算法
@@ -60,7 +90,9 @@ function getNextChordKey(currentKey, graph) {
     // 1. 计算总权重
     const keys = Object.keys(transitions);
     let sum = 0;
-    keys.forEach(k => sum += transitions[k]);
+    keys.forEach(k => {
+        sum += transitions[k];
+    });
     
     // 2. 随机选择
     let r = Math.random() * sum;
@@ -211,7 +243,7 @@ function tick() {
             // UI 更新
             document.getElementById('chord-display').innerText = chord.name;
             document.getElementById('chord-detail').innerText = `Notes: ${chord.tones.join("-")}`;
-            
+
             // Audio
             // 随机选择演奏方式：大部分时候是柱状(block)，偶尔扫弦(strum)或琶音(arpeggio)
             const styles = ["block", "block", "block", "strum", "arpeggio"];
@@ -258,11 +290,25 @@ function tick() {
                 
                 // UI
                 document.getElementById('note-display').innerText = selection.note;
+                pushMelodyTrail(selection.note, selection.index, durationInBeats, preset.scale.length);
                 const logDiv = document.getElementById('log');
                 
                 // 获取当前和弦名称用于日志
                 const chordName = state.playingChord ? state.playingChord.name : "--";
-                logDiv.innerHTML = `<div>${selection.note} (${durationInBeats}) on ${chordName}</div>` + logDiv.innerHTML;
+                const barSize = Math.min(durationInBeats / 2, 1);
+                logDiv.insertAdjacentHTML('afterbegin', `
+                    <div class="note-event">
+                        <span class="event-note">${selection.note}</span>
+                        <span class="event-duration" aria-label="${durationInBeats} beats">
+                            <span style="--duration-size: ${barSize}"></span>
+                        </span>
+                        <span class="event-beats">${durationInBeats}</span>
+                        <span class="event-chord">${chordName}</span>
+                    </div>
+                `);
+                while (logDiv.children.length > 20) {
+                    logDiv.lastElementChild.remove();
+                }
 
                 // 4. 推进状态
                 melodyBusyUntil = nextBeatTime + durationSeconds;
@@ -284,6 +330,24 @@ function tick() {
 }
 
 // --- 事件监听 ---
+
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        const tab = button.dataset.tab;
+
+        document.querySelectorAll('.tab-button').forEach(tabButton => {
+            const isActive = tabButton === button;
+            tabButton.classList.toggle('active', isActive);
+            tabButton.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            const isActive = panel.dataset.panel === tab;
+            panel.classList.toggle('active', isActive);
+            panel.hidden = !isActive;
+        });
+    });
+});
 
 function syncRainNoiseControls() {
     const isRainEnabled = rainToggle.checked;
@@ -313,7 +377,39 @@ function syncRainNoiseControls() {
     }
 }
 
-document.getElementById('start-btn').addEventListener('click', async function() {
+function stopSession() {
+    state.isPlaying = false;
+
+    if (timerWorker) {
+        timerWorker.postMessage("stop");
+    }
+
+    if (engine) {
+        engine.stopAll();
+        engine.toggleRain(false);
+    }
+
+    if (rainToggle) {
+        rainToggle.checked = false;
+    }
+
+    syncRainNoiseControls();
+    startBtn.innerText = "Start Session";
+    startBtn.classList.remove('is-ending');
+    document.getElementById('main-ui').style.opacity = 0.34;
+    document.getElementById('note-display').innerText = "--";
+    document.getElementById('chord-display').innerText = "--";
+    document.getElementById('chord-detail').innerText = "Waiting...";
+    document.getElementById('log').innerHTML = "";
+    clearVisualHistory();
+}
+
+startBtn.addEventListener('click', async function() {
+    if (state.isPlaying) {
+        stopSession();
+        return;
+    }
+
     await Tone.start();
     console.log("Audio Context Started");
 
@@ -324,7 +420,8 @@ document.getElementById('start-btn').addEventListener('click', async function() 
     
     await engine.resume(); 
     state.isPlaying = true;
-    this.style.display = 'none';
+    startBtn.innerText = "End Session";
+    startBtn.classList.add('is-ending');
     document.getElementById('main-ui').style.opacity = 1;
     
     // 立即对齐时间
@@ -334,6 +431,7 @@ document.getElementById('start-btn').addEventListener('click', async function() 
     stepIndex = 0; // 重置步进
     state.currentBeat = 0;
     state.currentChordKey = null; // 重置和弦
+    clearVisualHistory();
     
     // --- 修改：启动 Web Worker ---
     if (!timerWorker) {
