@@ -13,6 +13,7 @@ const state = {
     isDrumsEnabled: false, 
     currentBeat: 0,
     melodyTrail: [],
+    drumTrail: [],
     
     // --- 新增：乐句与动机状态 ---
     phraseState: 'PLAYING', // 'PLAYING' | 'RESTING'
@@ -30,6 +31,7 @@ let melodyBusyUntil = 0; // 新增：旋律忙碌截止时间，用于处理长�
 let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...) 
 let timerWorker = null; // 新增：Worker 实例
 const MAX_MELODY_TRAIL = 12;
+const MAX_DRUM_TRAIL = 28;
 
 const rainToggle = document.getElementById('rain-toggle');
 const thunderToggle = document.getElementById('thunder-toggle');
@@ -57,12 +59,18 @@ Object.keys(INSTRUMENT_PRESETS).forEach(key => {
 
 function renderMelodyTrail() {
     const trail = document.getElementById('melody-trail');
-    trail.innerHTML = state.melodyTrail.map(event => `
+    const lastDrumIndex = state.drumTrail.length - 1;
+    const drumEvents = state.drumTrail.map((event, index) => `
+        <span class="drum-mark drum-${event.type}${index === lastDrumIndex ? ' drum-mark-current' : ''}" style="--drum-x: ${event.x}; --drum-y: ${event.y}; --drum-size: ${event.size}" aria-label="${event.type}"></span>
+    `).join('');
+    const melodyEvents = state.melodyTrail.map(event => `
         <span class="trail-note" style="--pitch-y: ${event.pitchY}; --note-size: ${event.size}" aria-label="${event.note}">
             <span class="note-head"></span>
             <span class="note-tail"></span>
         </span>
     `).join('');
+
+    trail.innerHTML = `${drumEvents}${melodyEvents}`;
 }
 
 function pushMelodyTrail(note, noteIndex, durationInBeats, scaleLength) {
@@ -77,8 +85,47 @@ function pushMelodyTrail(note, noteIndex, durationInBeats, scaleLength) {
     renderMelodyTrail();
 }
 
+function pushDrumTrail(type, beatPosition) {
+    const props = {
+        kick: { y: 0.82, size: 1 },
+        snare: { y: 0.5, size: 0.82 },
+        hihat: { y: 0.2, size: 0.48 }
+    }[type];
+    if (!props) return;
+
+    state.drumTrail.push({
+        type,
+        x: Math.max(0, Math.min(1, beatPosition / Math.max(state.beatsPerBar, 1))),
+        y: props.y,
+        size: props.size
+    });
+    if (state.drumTrail.length > MAX_DRUM_TRAIL) {
+        state.drumTrail.shift();
+    }
+    renderMelodyTrail();
+}
+
+function playDrum(type, time, beatPosition) {
+    if (type === 'kick') {
+        engine.playKick(time);
+    } else if (type === 'snare') {
+        engine.playSnare(time);
+    } else if (type === 'hihat-heavy') {
+        engine.playHiHatHeavey(time);
+        pushDrumTrail('hihat', beatPosition);
+        return;
+    } else if (type === 'hihat') {
+        engine.playHiHat(time);
+    } else {
+        return;
+    }
+
+    pushDrumTrail(type, beatPosition);
+}
+
 function clearVisualHistory() {
     state.melodyTrail = [];
+    state.drumTrail = [];
     renderMelodyTrail();
 }
 
@@ -205,41 +252,43 @@ function tick() {
 
         // 1. 鼓组 (Drums)
         if (state.isDrumsEnabled) {
+            const beatPosition = currentBeatInBar + (isOnBeat ? 0 : 0.5);
+
             if (state.beatsPerBar === 3) {
                 if (isOnBeat) {
                     if (currentBeatInBar === 0) {
-                        engine.playKick(nextBeatTime);
-                        engine.playHiHatHeavey(nextBeatTime);
+                        playDrum('kick', nextBeatTime, beatPosition);
+                        playDrum('hihat-heavy', nextBeatTime, beatPosition);
                     } else {
-                        engine.playSnare(nextBeatTime);
-                        engine.playHiHat(nextBeatTime);
+                        playDrum('snare', nextBeatTime, beatPosition);
+                        playDrum('hihat', nextBeatTime, beatPosition);
                     }
                 }
             } else if (state.beatsPerBar === 6) {
                 if (currentHalfBeatInBar === 0) {
-                    engine.playKick(nextBeatTime);
-                    engine.playHiHatHeavey(nextBeatTime);
+                    playDrum('kick', nextBeatTime, beatPosition);
+                    playDrum('hihat-heavy', nextBeatTime, beatPosition);
                 } else if (currentHalfBeatInBar === 6) {
-                    engine.playKick(nextBeatTime);
-                    engine.playHiHat(nextBeatTime);
+                    playDrum('kick', nextBeatTime, beatPosition);
+                    playDrum('hihat', nextBeatTime, beatPosition);
                 } else if (currentHalfBeatInBar === 8) {
-                    engine.playSnare(nextBeatTime);
+                    playDrum('snare', nextBeatTime, beatPosition);
                 } else if (currentHalfBeatInBar % 2 === 0) {
-                    engine.playHiHat(nextBeatTime);
+                    playDrum('hihat', nextBeatTime, beatPosition);
                 }
             } else {
                 const isBackbeat = currentBeatInBar === 1 || currentBeatInBar === 3;
                 const isDownbeat = currentBeatInBar === 0 || currentBeatInBar === 2;
 
                 if (isOnBeat && isDownbeat) {
-                    engine.playKick(nextBeatTime);
+                    playDrum('kick', nextBeatTime, beatPosition);
                 }
 
                 if (isOnBeat && isBackbeat) {
-                    engine.playSnare(nextBeatTime);
+                    playDrum('snare', nextBeatTime, beatPosition);
                 }
 
-                engine.playHiHat(nextBeatTime);
+                playDrum('hihat', nextBeatTime, beatPosition);
             }
         }
 

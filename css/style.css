@@ -368,6 +368,64 @@ h3 {
     padding: 10px 6px;
 }
 
+.drum-mark {
+    position: absolute;
+    left: calc(10px + var(--drum-x) * (100% - 20px));
+    top: calc(var(--drum-y) * 100%);
+    z-index: 0;
+    width: calc(5px + var(--drum-size) * 9px);
+    height: calc(5px + var(--drum-size) * 9px);
+    transform: translate(-50%, -50%);
+    opacity: 0.28;
+    pointer-events: none;
+    filter: blur(0.15px);
+}
+
+.drum-mark-current {
+    z-index: 1;
+    opacity: 0.76;
+    filter: none;
+    animation: drum-mark-current 0.42s ease-out both;
+}
+
+.drum-mark-current.drum-kick {
+    border-color: rgba(242, 109, 109, 0.82);
+    background: rgba(242, 109, 109, 0.2);
+    box-shadow: 0 0 14px rgba(242, 109, 109, 0.42), 0 0 36px rgba(242, 109, 109, 0.18);
+}
+
+.drum-mark-current.drum-snare {
+    border-color: rgba(229, 245, 239, 0.72);
+    background: rgba(229, 245, 239, 0.18);
+    box-shadow: 0 0 14px rgba(229, 245, 239, 0.34), 0 0 30px rgba(42, 169, 169, 0.12);
+}
+
+.drum-mark-current.drum-hihat {
+    background: rgba(42, 169, 169, 0.82);
+    box-shadow: 0 0 12px rgba(42, 169, 169, 0.38), 0 0 26px rgba(42, 169, 169, 0.16);
+}
+
+.drum-kick {
+    border: 1px solid rgba(242, 109, 109, 0.34);
+    border-radius: 50%;
+    background: rgba(242, 109, 109, 0.08);
+    box-shadow: 0 0 18px rgba(242, 109, 109, 0.08);
+}
+
+.drum-snare {
+    border: 1px solid rgba(229, 245, 239, 0.24);
+    border-radius: 3px;
+    background: rgba(229, 245, 239, 0.06);
+    box-shadow: 0 0 12px rgba(229, 245, 239, 0.06);
+}
+
+.drum-hihat {
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(42, 169, 169, 0.34);
+    box-shadow: 0 0 10px rgba(42, 169, 169, 0.06);
+}
+
 .trail-stage::before {
     content: "";
     position: absolute;
@@ -376,6 +434,7 @@ h3 {
     width: 100%;
     height: 48px;
     transform: translateY(-50%);
+    z-index: 0;
     background: repeating-linear-gradient(
         to bottom,
         rgba(229, 245, 239, 0.16) 0,
@@ -394,12 +453,13 @@ h3 {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(42, 169, 169, 0.38), rgba(242, 109, 109, 0.18), transparent);
     transform: translateY(-50%);
+    z-index: 0;
     animation: trail-flow 4.8s linear infinite;
 }
 
 .trail-note {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     display: inline-flex;
     align-items: center;
     width: calc(26px + var(--note-size) * 48px);
@@ -407,7 +467,7 @@ h3 {
     height: 26px;
     flex: 0 0 auto;
     transform: translateY(calc((0.5 - var(--pitch-y)) * 34px));
-    opacity: 0.72;
+    opacity: 0.78;
 }
 
 .trail-note:last-child {
@@ -421,7 +481,7 @@ h3 {
     border: 1px solid rgba(42, 169, 169, 0.9);
     border-radius: 50%;
     background: rgba(42, 169, 169, 0.24);
-    box-shadow: 0 0 10px rgba(42, 169, 169, 0.13);
+    box-shadow: 0 0 12px rgba(42, 169, 169, 0.2);
     transform: rotate(-16deg);
 }
 
@@ -436,7 +496,7 @@ h3 {
 .trail-note:last-child .note-head {
     border-color: rgba(242, 109, 109, 0.72);
     background: rgba(242, 109, 109, 0.22);
-    box-shadow: 0 0 14px rgba(242, 109, 109, 0.16);
+    box-shadow: 0 0 18px rgba(242, 109, 109, 0.28), 0 0 34px rgba(42, 169, 169, 0.12);
 }
 
 @keyframes trail-note-enter {
@@ -474,6 +534,32 @@ h3 {
 
     to {
         opacity: 1;
+    }
+}
+
+@keyframes drum-mark-current {
+    0% {
+        opacity: 0.95;
+        transform: translate(-50%, -50%) scale(1.42);
+        filter: brightness(1.8);
+    }
+
+    35% {
+        opacity: 0.38;
+        transform: translate(-50%, -50%) scale(0.92);
+        filter: brightness(0.9);
+    }
+
+    62% {
+        opacity: 0.88;
+        transform: translate(-50%, -50%) scale(1.18);
+        filter: brightness(1.55);
+    }
+
+    100% {
+        opacity: 0.3;
+        transform: translate(-50%, -50%) scale(1);
+        filter: brightness(1);
     }
 }
 

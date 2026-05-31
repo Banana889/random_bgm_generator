@@ -30,6 +30,17 @@ Then open:
 Running it directly via `file://` is not recommended.
 The app uses a Web Worker (`js/worker.js`) and audio assets such as `res/rain.mp3`, which browsers often restrict outside a local server context.
 
+## Drum Samples
+
+Driftone will use real drum one-shot samples when these files exist:
+
+- `res/drums/kick.mp3`
+- `res/drums/snare.mp3`
+- `res/drums/hihat.mp3`
+- `res/drums/hihat-heavy.mp3` optional
+
+If a sample is missing or still loading, the app falls back to the built-in synthesized drum sound.
+
 ## Roadmap
 
 See it at [here](./TODO.md).

@@ -28,7 +28,7 @@ class AudioEngine {
         // 新增：用于 Wind Bell 的加法合成器组 (初始为空)
         this.additiveSynths = []; 
         
-        // 4. 鼓组 & 环境音 (保持不变)
+        // 4. 鼓组 & 环境音
         this.kick = new Tone.MembraneSynth({
             pitchDecay: 0.045,
             octaves: 3.5,
@@ -83,6 +83,16 @@ class AudioEngine {
             }
         }).connect(this.hihatFilter);
         this.hihat.volume.value = -21;
+        this.drumPlayers = new Tone.Players({
+            kick: "res/drums/kick.mp3",
+            snare: "res/drums/snare.mp3",
+            hihat: "res/drums/hihat.mp3",
+            hihatHeavy: "res/drums/hihat-heavy.mp3"
+        }).toDestination();
+        this.drumPlayers.player("kick").volume.value = -8;
+        this.drumPlayers.player("snare").volume.value = -10;
+        this.drumPlayers.player("hihat").volume.value = -18;
+        this.drumPlayers.player("hihatHeavy").volume.value = -16;
         this.rainNoise = new Tone.Noise("pink");
         this.rainFilter = new Tone.AutoFilter({ frequency: 0.1, depth: 0.5, baseFrequency: 600 }).start();
         this.rainVolume = new Tone.Volume(-Infinity);
@@ -260,24 +270,40 @@ class AudioEngine {
         });
     }
 
+    playDrumSample(name, time) {
+        if (!this.drumPlayers) return false;
+
+        const player = this.drumPlayers.player(name);
+        if (!player || !player.loaded) return false;
+
+        player.start(time);
+        return true;
+    }
+
     playKick(time) {
+        if (this.playDrumSample('kick', time)) return;
+
         // C1 是标准的底鼓音高
         this.kick.triggerAttackRelease(55, "8n", time, 0.62);
     }
 
     playSnare(time) {
+        if (this.playDrumSample('snare', time)) return;
+
         this.snareBody.triggerAttackRelease(200, "16n", time, 0.5);
         this.snare.triggerAttackRelease("16n", time, 0.58);
     }
 
     playHiHatHeavey(time) {
-        console.log("Playing hi-hat at time:", time);
+        if (this.playDrumSample('hihatHeavy', time) || this.playDrumSample('hihat', time)) return;
+
         // 触发短促的噪音
         this.hihat.triggerAttackRelease("32n", time, 0.3); // velocity 0.3
     }
 
     playHiHat(time) {
-        console.log("Playing hi-hat at time:", time);
+        if (this.playDrumSample('hihat', time)) return;
+
         // 触发短促的噪音
         this.hihat.triggerAttackRelease("32n", time, 0.2); // velocity 0.3
     }
