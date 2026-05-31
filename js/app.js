@@ -32,6 +32,7 @@ let nextBeatTime = 0;
 let melodyBusyUntil = 0; // 新增：旋律忙碌截止时间，用于处理长音符 
 let stepIndex = 0; // 新增：半拍计数器 (0, 1, 2, 3...) 
 let timerWorker = null; // 新增：Worker 实例
+const SCHEDULE_LOOKAHEAD = 0.18;
 const MAX_MELODY_TRAIL = 12;
 const MAX_DRUM_TRAIL = 28;
 
@@ -290,15 +291,14 @@ function tick() {
     const beatDuration = 60.0 / state.bpm; 
     const stepDuration = beatDuration / 2; 
     
-    // --- 新增：后台重同步逻辑 (Resync) ---
-    // 如果 nextBeatTime 落后当前时间超过 0.5秒 (说明浏览器可能在后台被降频了)
-    // 我们就不补齐中间的音符了，直接"快进"到当前时间，避免报错和爆音
-    if (nextBeatTime < now - 0.5) {
-        nextBeatTime = now;
+    // 移动端后台会节流 JS。恢复时不要补打过期事件，否则容易出现毛刺/沙沙声。
+    if (nextBeatTime < now - stepDuration) {
+        nextBeatTime = now + 0.02;
+        melodyBusyUntil = Math.max(melodyBusyUntil, nextBeatTime);
     }
 
     // --- 统一调度核心 (The Grid) ---
-    while (nextBeatTime < now + 0.1) {
+    while (nextBeatTime < now + SCHEDULE_LOOKAHEAD) {
         const isOnBeat = stepIndex % 2 === 0;
         const currentHalfBeatInBar = stepIndex % (state.beatsPerBar * 2);
         const currentBeatInBar = Math.floor(stepIndex / 2) % state.beatsPerBar;
@@ -468,6 +468,14 @@ function syncDrumVolume() {
     }
 }
 
+function resetSchedulerTiming(offset = 0.12) {
+    if (!engine) return;
+
+    const now = engine.getCurrentTime();
+    nextBeatTime = now + offset;
+    melodyBusyUntil = nextBeatTime;
+}
+
 function stopSession() {
     state.isPlaying = false;
 
@@ -523,9 +531,7 @@ startBtn.addEventListener('click', async function() {
     document.getElementById('main-ui').style.opacity = 1;
 
     // 立即对齐时间
-    const now = engine.getCurrentTime();
-    nextBeatTime = now + 0.1; // 稍微延迟一点点开始，给音频引擎缓冲
-    melodyBusyUntil = nextBeatTime; // 重置旋律状态
+    resetSchedulerTiming(0.1); // 稍微延迟一点点开始，给音频引擎缓冲
     stepIndex = 0; // 重置步进
     state.currentBeat = 0;
     state.currentChordKey = null; // 重置和弦
@@ -625,4 +631,10 @@ document.getElementById('time-sig-select').addEventListener('change', (e) => {
     state.drumPattern = {};
     state.drumPatternBarsRemaining = 0;
     syncBeatUnit();
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && state.isPlaying) {
+        resetSchedulerTiming(0.08);
+    }
 });
