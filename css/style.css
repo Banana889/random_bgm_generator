@@ -661,6 +661,12 @@ h3 {
         min-height: auto;
     }
 
+    #log {
+        flex: 0 0 auto;
+        min-height: 104px;
+        max-height: 24vh;
+    }
+
 }
 
 @media (max-width: 600px) {
@@ -681,5 +687,11 @@ h3 {
     .range-row {
         grid-template-columns: 1fr;
         gap: 8px;
+    }
+
+    #log {
+        max-height: 160px;
+        padding: 12px;
+        font-size: 0.76rem;
     }
 }
