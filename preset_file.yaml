@@ -33,8 +33,8 @@ presets:
     drumVolume: 0.0
   wind_bell: 
     name: "Wind Bell"
-    bpm: 60
-    scale: "a_minor"
+    bpm: 90
+    scale: "c_major_high"
     instrument: "wind_bell"
     timeSignature: 4
     drumsEnabled: false

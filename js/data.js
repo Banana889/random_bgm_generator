@@ -123,7 +123,7 @@ const PRESETS = {
     },
     "c_major_high": {
         name: "C Major High (Bright)",
-        scale: ['C4','D4','E4','F4','G4','A4','B4','C5','D5','E5','F5','G5'],
+        scale: ['B3', 'C4','D4','E4','F4','G4','A4','B4','C5','D5'],
         // 新增：定义稳定音 (主音 C, 属音 G)
         stableNotes: ["C", "G"], 
         startChord: "I",
