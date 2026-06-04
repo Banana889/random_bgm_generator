@@ -581,8 +581,10 @@ function syncThunderNoiseControls() {
 }
 
 function syncDrumVolume() {
+    const val = parseFloat(drumVolInput.value);
+    document.getElementById('drum-vol-val').innerText = val.toFixed(2);
     if (engine) {
-        engine.setDrumVolume(parseFloat(drumVolInput.value));
+        engine.setDrumVolume(val);
     }
 }
 
