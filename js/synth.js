@@ -121,7 +121,7 @@ class AudioEngine {
         this.rainPlayer.volume.value = -10;
 
         // 5. 加载默认音色
-        this.setInstrument("origin");
+        this.setInstrument(instrumentSelect.value);
     }
     
     setDrumVolume(value) {
