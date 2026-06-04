@@ -71,12 +71,6 @@ Object.keys(INSTRUMENT_PRESETS).forEach(key => {
 const presetSelect = document.getElementById('preset-select');
 let presetData = null;
 
-// 默认占位选项
-const defaultOption = document.createElement('option');
-defaultOption.value = '';
-defaultOption.text = '-- Select Preset --';
-presetSelect.appendChild(defaultOption);
-
 fetch('preset_file.yaml')
   .then(res => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
