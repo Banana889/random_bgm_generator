@@ -151,6 +151,18 @@ presetSelect.addEventListener('change', (e) => {
   }
 });
 
+document.getElementById('random-preset-btn').addEventListener('click', () => {
+  if (!presetData) return;
+  const keys = Object.keys(presetData.presets);
+  const currentKey = presetSelect.value;
+  let randomKey;
+  do {
+    randomKey = keys[Math.floor(Math.random() * keys.length)];
+  } while (randomKey === currentKey && keys.length > 1);
+  presetSelect.value = randomKey;
+  presetSelect.dispatchEvent(new Event('change'));
+});
+
 function renderMelodyTrail() {
     const trail = document.getElementById('melody-trail');
     const lastDrumIndex = state.drumTrail.length - 1;

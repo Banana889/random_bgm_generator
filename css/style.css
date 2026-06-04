@@ -781,6 +781,33 @@ h3 {
     gap: 12px;
 }
 
+/* 随机 preset 骰子按钮 */
+.dice-btn {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+}
+
+.dice-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+    transform: rotate(60deg);
+}
+
+.dice-btn:active {
+    transform: rotate(120deg) scale(0.9);
+}
+
 @media (max-width: 860px) {
     body {
         padding: 16px;

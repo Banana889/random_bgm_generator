@@ -25,7 +25,7 @@
 * [x] 强调音阶特征音
 * [x] dorian 音阶 
 * [ ] ==swing shuffle 节奏==: processing
-* [ ] 一键随机设置选项
+* [x] 一键随机设置选项
 
 ---
 
