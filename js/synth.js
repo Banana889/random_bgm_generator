@@ -190,20 +190,26 @@ class AudioEngine {
     }
     
 
+    // 从音频的随机位置开始播放 rain
+    _startRainAtRandomPosition() {
+        const dur = this.rainPlayer.buffer.duration;
+        const offset = Math.random() * dur;
+        this.rainPlayer.start(undefined, offset);
+        console.log("Rain MP3 started at", offset.toFixed(1) + "s");
+    }
+
     toggleRain(isEnabled) {
         if (isEnabled) {
             this.rainVolume.volume.rampTo(-15, 2);
 
             // 确保音频已加载 (Tone.Player 是异步加载的)
             if (this.rainPlayer.loaded) {
-                this.rainPlayer.start();
-                console.log("Rain MP3 started");
+                this._startRainAtRandomPosition();
             } else {
                 console.log("Rain MP3 loading...");
                 // 如果还没加载完，等加载完自动播放
                 Tone.loaded().then(() => {
-                    this.rainPlayer.start();
-                    console.log("Rain MP3 started (delayed)");
+                    this._startRainAtRandomPosition();
                 });
             }
         } else {
