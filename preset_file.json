@@ -15,8 +15,7 @@
       "scale": "c_major",
       "instrument": "origin",
       "timeSignature": 4,
-      "drumsEnabled": false,
-      "drumVolume": 0.0
+      "drumsEnabled": false
     },
     "mystery": {
       "name": "Mysterious",
@@ -33,8 +32,7 @@
       "scale": "c_major_high",
       "instrument": "soft_dream",
       "timeSignature": 4,
-      "drumsEnabled": false,
-      "drumVolume": 0.0
+      "drumsEnabled": false
     },
     "wind_bell": {
       "name": "Wind Bell",
@@ -42,8 +40,7 @@
       "scale": "c_major_high",
       "instrument": "wind_bell",
       "timeSignature": 4,
-      "drumsEnabled": false,
-      "drumVolume": 0.0
+      "drumsEnabled": false
     }
   }
 }
