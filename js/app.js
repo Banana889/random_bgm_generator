@@ -59,13 +59,102 @@ Object.keys(PRESETS).forEach(key => {
     scaleSelect.appendChild(option);
 });
 
-// 新增：初始化音色选择器
 const instrumentSelect = document.getElementById('instrument-select');
 Object.keys(INSTRUMENT_PRESETS).forEach(key => {
     const option = document.createElement('option');
     option.value = key;
     option.text = INSTRUMENT_PRESETS[key].name;
     instrumentSelect.appendChild(option);
+});
+
+// preset select
+const presetSelect = document.getElementById('preset-select');
+let presetData = null;
+
+// 默认占位选项
+const defaultOption = document.createElement('option');
+defaultOption.value = '';
+defaultOption.text = '-- Select Preset --';
+presetSelect.appendChild(defaultOption);
+
+fetch('preset_file.yaml')
+  .then(res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();
+  })
+  .then(yamlText => {
+    presetData = jsyaml.load(yamlText);
+    const presets = presetData.presets;
+    const keys = Object.keys(presets);
+    keys.forEach(key => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.text = presets[key].name;
+      presetSelect.appendChild(option);
+    });
+    // 初始化时随机选一个 preset
+    const randomKey = keys[Math.floor(Math.random() * keys.length)];
+    presetSelect.value = randomKey;
+    console.log(`Loaded presets: ${keys.join(', ')}. Defaulting to "${randomKey}".`);
+    presetSelect.dispatchEvent(new Event('change'));
+  })
+  .catch(err => console.error('Failed to load presets:', err));
+
+presetSelect.addEventListener('change', (e) => {
+  const key = e.target.value;
+  if (!key || !presetData) return;
+
+  const preset = presetData.presets[key];
+
+  // BPM
+  if (preset.bpm) {
+    bpmSlider.value = preset.bpm;
+    syncBpmFromSlider();
+  }
+
+  // Scale
+  if (preset.scale && PRESETS[preset.scale]) {
+    scaleSelect.value = preset.scale;
+    state.currentPresetKey = preset.scale;
+    state.currentChordKey = null;
+  }
+
+  // Instrument
+  if (preset.instrument && INSTRUMENT_PRESETS[preset.instrument]) {
+    instrumentSelect.value = preset.instrument;
+    if (engine) engine.setInstrument(preset.instrument);
+  }
+
+  // Time signature
+  if (preset.timeSignature) {
+    document.getElementById('time-sig-select').value = String(preset.timeSignature);
+    state.beatsPerBar = preset.timeSignature;
+    state.drumPattern = {};
+    state.drumPatternBarsRemaining = 0;
+    clearDrumFill();
+    state.isDrumFillEnabled = false;
+    drumFillBtn.checked = false;
+    state.drumFillBarsUntilAuto = AUTO_DRUM_FILL_INTERVAL_BARS;
+    syncBeatUnit();
+  }
+
+  // Drums toggle
+  if (preset.drumsEnabled !== undefined) {
+    document.getElementById('drums-toggle').checked = preset.drumsEnabled;
+    state.isDrumsEnabled = preset.drumsEnabled;
+    if (!preset.drumsEnabled) {
+      state.isDrumFillEnabled = false;
+      drumFillBtn.checked = false;
+      clearDrumFill();
+      state.drumFillBarsUntilAuto = AUTO_DRUM_FILL_INTERVAL_BARS;
+    }
+  }
+
+  // Drum volume
+  if (preset.drumVolume !== undefined) {
+    drumVolInput.value = preset.drumVolume;
+    syncDrumVolume();
+  }
 });
 
 function renderMelodyTrail() {

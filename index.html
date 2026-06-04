@@ -63,7 +63,7 @@
 
         <div class="right-stack">
             <section class="control-panel" aria-label="Session controls">
-
+           
             <div class="tab-list" role="tablist" aria-label="Control sections">
                 <button class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="tab-melody" data-tab="melody">Melody</button>
                 <button class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="tab-rhythm" data-tab="rhythm">Rhythm</button>
@@ -202,7 +202,12 @@
                 </div>
             </div>
             </section>
-
+            
+            <div class="control-group">
+            <label>Preset melody/rhythm</label>
+            <select id="preset-select"></select>
+            </div>
+            
             <div class="session-actions" aria-label="Session actions">
                 <button id="start-btn" type="button">Start Session</button>
             </div>
@@ -217,6 +222,8 @@
 
     <script src="js/noise_generator.js"></script>
     <script src="js/nextnote.js"></script>
+    <!-- YAML parser (no package manager) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <!-- Visuals -->
     <script src="js/visuals.js?v=thunder-visuals"></script>
     <script src="js/app.js?v=drum-fill-toggle"></script>

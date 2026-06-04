@@ -1,0 +1,17 @@
+presets:
+  jazzy:
+    name: "Slow Blues"
+    bpm: 55
+    scale: "a_minor_blues"
+    instrument: "flute"
+    timeSignature: 6
+    drumsEnabled: true
+    drumVolume: 0.6
+  ambient:
+    name: "Ambient Dream"
+    bpm: 55
+    scale: "c_major_high"
+    instrument: "fm-pad"
+    timeSignature: 4
+    drumsEnabled: false
+    drumVolume: 0.0
