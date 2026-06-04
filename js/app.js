@@ -71,13 +71,13 @@ Object.keys(INSTRUMENT_PRESETS).forEach(key => {
 const presetSelect = document.getElementById('preset-select');
 let presetData = null;
 
-fetch('preset_file.yaml')
+fetch('preset_file.json')
   .then(res => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.text();
+    return res.json();
   })
-  .then(yamlText => {
-    presetData = jsyaml.load(yamlText);
+  .then(data => {
+    presetData = data;
     const presets = presetData.presets;
     const keys = Object.keys(presets);
     keys.forEach(key => {

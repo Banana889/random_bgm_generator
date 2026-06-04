@@ -1,0 +1,49 @@
+{
+  "presets": {
+    "jazzy": {
+      "name": "Slow Blues",
+      "bpm": 55,
+      "scale": "a_minor_blues",
+      "instrument": "flute",
+      "timeSignature": 6,
+      "drumsEnabled": true,
+      "drumVolume": 0.6
+    },
+    "trivial": {
+      "name": "Trivial",
+      "bpm": 75,
+      "scale": "c_major",
+      "instrument": "origin",
+      "timeSignature": 4,
+      "drumsEnabled": false,
+      "drumVolume": 0.0
+    },
+    "mystery": {
+      "name": "Mysterious",
+      "bpm": 85,
+      "scale": "c_dorian",
+      "instrument": "electric_piano",
+      "timeSignature": 3,
+      "drumsEnabled": true,
+      "drumVolume": 0.3
+    },
+    "twinkle": {
+      "name": "Twinkle",
+      "bpm": 110,
+      "scale": "c_major_high",
+      "instrument": "soft_dream",
+      "timeSignature": 4,
+      "drumsEnabled": false,
+      "drumVolume": 0.0
+    },
+    "wind_bell": {
+      "name": "Wind Bell",
+      "bpm": 90,
+      "scale": "c_major_high",
+      "instrument": "wind_bell",
+      "timeSignature": 4,
+      "drumsEnabled": false,
+      "drumVolume": 0.0
+    }
+  }
+}
