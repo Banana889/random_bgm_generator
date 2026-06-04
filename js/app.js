@@ -116,7 +116,10 @@ presetSelect.addEventListener('change', (e) => {
   // Instrument
   if (preset.instrument && INSTRUMENT_PRESETS[preset.instrument]) {
     instrumentSelect.value = preset.instrument;
-    if (engine) engine.setInstrument(preset.instrument);
+    if (engine) {
+      engine.setInstrument(preset.instrument);
+      engine.updateLeadTremolo(state.bpm);
+    }
   }
 
   // Time signature
@@ -654,6 +657,7 @@ startBtn.addEventListener('click', async function() {
 
     if (!engine) engine = new AudioEngine();
     await engine.resume();
+    engine.updateLeadTremolo(state.bpm);
     syncDrumVolume();
     console.log("Audio Context Started");
 
@@ -750,6 +754,7 @@ const beatUnit = document.getElementById('beat-unit');
 function syncBpmFromSlider() {
     state.bpm = parseInt(bpmSlider.value, 10);
     bpmVal.innerText = state.bpm;
+    if (engine) engine.updateLeadTremolo(state.bpm);
 }
 
 function syncBeatUnit() {
@@ -774,6 +779,7 @@ scaleSelect.addEventListener('change', (e) => {
 instrumentSelect.addEventListener('change', (e) => {
     if (engine) {
         engine.setInstrument(e.target.value);
+        engine.updateLeadTremolo(state.bpm);
     }
 });
 

@@ -23,7 +23,9 @@ class AudioEngine {
         
         // Lead Synth (旋律)
         // 使用 PolySynth 以支持快速音符重叠时的平滑过渡
-        this.leadSynth = new Tone.PolySynth(Tone.FMSynth).connect(this.reverb);
+        this.leadSynth = new Tone.PolySynth(Tone.FMSynth);
+        this.leadTremolo = null;
+        this.leadTremoloBpmRatio = null;
 
         // 新增：用于 Wind Bell 的加法合成器组 (初始为空)
         this.additiveSynths = []; 
@@ -179,15 +181,44 @@ class AudioEngine {
             });
             this.additiveSynths = [];
 
-            const { volume: leadVolume, ...leadParams } = preset.lead;
+            const { volume: leadVolume, tremolo: leadTremoloConfig, ...leadParams } = preset.lead;
 
             // 如果从加法切回来，可能需要重置一下 oscillator 类型，防止报错
             // 因为 PolySynth.set 有时比较挑剔
             this.leadSynth.releaseAll(Tone.now());
             this.leadSynth.set(leadParams);
             this.leadSynth.volume.rampTo(leadVolume, 0.1);
+
+            // --- 3. 音量颤音 (Tremolo) ---
+            this.leadSynth.disconnect();
+            if (this.leadTremolo) {
+                this.leadTremolo.dispose();
+                this.leadTremolo = null;
+                this.leadTremoloBpmRatio = null;
+            }
+            if (leadTremoloConfig) {
+                this.leadTremoloBpmRatio = leadTremoloConfig.bpmRatio || 4;
+                this.leadTremolo = new Tone.Tremolo({
+                    frequency: 1, // 初始值，后续会根据 BPM 更新,
+                    depth: leadTremoloConfig.depth
+                }).start();
+                this.leadSynth.chain(this.leadTremolo, this.reverb);
+                console.log("Lead tremolo enabled with BPM ratio:", this.leadTremoloBpmRatio);
+
+            } else {
+                this.leadSynth.connect(this.reverb);
+            }
         }
     }
+    // 根据 BPM 更新 tremolo 频率（频率 = BPM × bpmRatio / 60 Hz）
+    updateLeadTremolo(bpm) {
+        console.log("Updating lead tremolo frequency based on BPM:", bpm);
+        if (this.leadTremolo && this.leadTremoloBpmRatio) {
+            console.log(`Setting lead tremolo frequency to ${bpm * this.leadTremoloBpmRatio / 60} Hz (BPM: ${bpm}, Ratio: ${this.leadTremoloBpmRatio})`);
+            this.leadTremolo.frequency.rampTo(bpm * this.leadTremoloBpmRatio / 60, 0.1);
+        }
+    }
+
     
 
     // 从音频的随机位置开始播放 rain
@@ -227,7 +258,7 @@ class AudioEngine {
         this.padSynth.releaseAll(time);
 
         const notes = this.getChordNotes(chord);
-        console.log("Playing chord:", chord.name, "Notes:", notes, "Style:", style);
+        // console.log("Playing chord:", chord.name, "Notes:", notes, "Style:", style);
 
         // 根据 style 决定触发方式
         switch (style) {

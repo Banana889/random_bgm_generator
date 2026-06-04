@@ -17,7 +17,8 @@ const INSTRUMENT_PRESETS = {
                 sustain: 1, 
                 release: 0.5 
             },
-            volume: -5
+            volume: -5,
+            tremolo: { depth:0.5, bpmRatio: 0.5 } // depth: 深度；bpmRatio: 颤音频率是每秒节拍数的 bpmRatio 倍；效果：左右耳机交替
         }
     },
     "soft_dream": {
