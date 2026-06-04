@@ -180,9 +180,10 @@ class AudioEngine {
             this.additiveSynths = [];
 
             const { volume: leadVolume, ...leadParams } = preset.lead;
-            
+
             // 如果从加法切回来，可能需要重置一下 oscillator 类型，防止报错
             // 因为 PolySynth.set 有时比较挑剔
+            this.leadSynth.releaseAll(Tone.now());
             this.leadSynth.set(leadParams);
             this.leadSynth.volume.rampTo(leadVolume, 0.1);
         }

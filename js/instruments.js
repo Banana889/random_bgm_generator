@@ -8,16 +8,11 @@ const INSTRUMENT_PRESETS = {
             volume: -10
         },
         lead: {
-            // 使用 amsine (调幅正弦波) 来配合 modulation 参数
-            oscillator: { type: "amsine", modulationType: "square" },
+            oscillator: { type: "sine", modulationType: "square" },
             envelope: { attack: 0.01, decay: 0.01, sustain: 1, release: 0.5 },
-            
-            // 新增：调制振荡器配置 (来自截图)
             modulation: { type: "square" },
-            
-            // 新增：调制包络 (控制"粗糙感"随时间的变化)
             modulationEnvelope: { 
-                attack: 0.5, 
+                attack: 0.1, 
                 decay: 0, 
                 sustain: 1, 
                 release: 0.5 
