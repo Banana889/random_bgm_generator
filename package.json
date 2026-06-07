@@ -6,15 +6,21 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "cap:sync": "npm run build && cap sync",
+    "cap:android": "npm run cap:sync && cap open android",
+    "android:assemble-debug": "cd android && ./gradlew assembleDebug",
     "preview": "vite preview",
     "test": "vitest run"
   },
   "dependencies": {
+    "@capacitor/core": "^8.4.0",
     "react": "latest",
     "react-dom": "latest",
     "tone": "latest"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
     "@testing-library/react": "latest",
     "@types/node": "^25.9.2",
     "@types/react": "latest",
