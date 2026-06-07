@@ -233,7 +233,7 @@ function playDrum(type, time, beatPosition, isFill = false) {
     } else if (type === 'crash') {
         engine.playCrash(time);
     } else if (type === 'hihat-heavy') {
-        engine.playHiHatHeavey(time);
+        engine.playHiHatHeavy(time);
         pushDrumTrail('hihat', beatPosition, isFill);
         return;
     } else if (type === 'hihat') {

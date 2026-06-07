@@ -22,7 +22,7 @@ It combines simple harmony rules, evolving melody logic, selectable instruments,
 
 ## Run
 
-Try it online on my [Github Page](https://banana889.github.io/Driftone/).
+Try it online on my [GitHub Pages site](https://banana889.github.io/Driftone/).
 
 Or serve the project over a local HTTP server:
 
@@ -41,6 +41,6 @@ The app uses a Web Worker (`js/worker.js`) and audio assets such as `res/rain.mp
 
 ## Roadmap
 
-See it at [here](./TODO.md).
+See the roadmap in [TODO.md](./TODO.md).
 
 If you enjoy Driftone, consider giving this repo a star.

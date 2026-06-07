@@ -347,7 +347,7 @@ class AudioEngine {
         this.snare.triggerAttackRelease("16n", time, 0.58);
     }
 
-    playHiHatHeavey(time) {
+    playHiHatHeavy(time) {
         if (this.playDrumSample('hihatHeavy', time) || this.playDrumSample('hihat', time)) return;
 
         // 触发短促的噪音
