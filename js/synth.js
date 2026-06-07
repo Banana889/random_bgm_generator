@@ -19,11 +19,13 @@ class AudioEngine {
 
         // 3. 初始化合成器 (先创建空壳，具体参数由 setInstrument 填充)
         // Pad Synth
-        this.padSynth = new Tone.PolySynth(Tone.AMSynth).chain(this.padTremolo, this.padFilter, this.reverb);
+        this.padVolumeNode = new Tone.Volume(0).connect(this.reverb);
+        this.padSynth = new Tone.PolySynth(Tone.AMSynth).chain(this.padTremolo, this.padFilter, this.padVolumeNode);
         
         // Lead Synth (旋律)
         // 使用 PolySynth 以支持快速音符重叠时的平滑过渡
         this.leadSynth = new Tone.PolySynth(Tone.FMSynth);
+        this.leadVolumeNode = new Tone.Volume(0).connect(this.reverb);
         this.leadTremolo = null;
         this.leadTremoloBpmRatio = null;
 
@@ -131,6 +133,16 @@ class AudioEngine {
         this.drumVolume.volume.rampTo(normalized === 0 ? -Infinity : 20 * Math.log10(normalized * 2), 0.05);
     }
     
+    setLeadVolume(value) {
+        const v = Math.max(0, Math.min(1, value));
+        this.leadVolumeNode.volume.rampTo(v === 0 ? -Infinity : 20 * Math.log10(v), 0.05);
+    }
+
+    setPadVolume(value) {
+        const v = Math.max(0, Math.min(1, value));
+        this.padVolumeNode.volume.rampTo(v === 0 ? -Infinity : 20 * Math.log10(v), 0.05);
+    }
+
     // 加载音色
     setInstrument(presetKey) {
         const preset = INSTRUMENT_PRESETS[presetKey];
@@ -202,11 +214,11 @@ class AudioEngine {
                     frequency: 1, // 初始值，后续会根据 BPM 更新,
                     depth: leadTremoloConfig.depth
                 }).start();
-                this.leadSynth.chain(this.leadTremolo, this.reverb);
+                this.leadSynth.chain(this.leadTremolo, this.leadVolumeNode);
                 console.log("Lead tremolo enabled with BPM ratio:", this.leadTremoloBpmRatio);
 
             } else {
-                this.leadSynth.connect(this.reverb);
+                this.leadSynth.connect(this.leadVolumeNode);
             }
         }
     }

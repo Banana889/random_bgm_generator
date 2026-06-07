@@ -47,6 +47,8 @@ const thunderVolInput = document.getElementById('noise-vol');
 const thunderDistanceInput = document.getElementById('noise-freq');
 const noiseQInput = document.getElementById('noise-q');
 const drumVolInput = document.getElementById('drum-vol');
+const melodyVolInput = document.getElementById('melody-vol');
+const chordVolInput = document.getElementById('chord-vol');
 const drumFillBtn = document.getElementById('drum-fill-btn');
 const drumFillControl = document.querySelector('.fill-control');
 const startBtn = document.getElementById('start-btn');
@@ -603,6 +605,18 @@ function syncDrumVolume() {
     }
 }
 
+function syncMelodyVolume() {
+    const val = parseFloat(melodyVolInput.value);
+    document.getElementById('melody-vol-val').innerText = val.toFixed(2);
+    if (engine) engine.setLeadVolume(val);
+}
+
+function syncChordVolume() {
+    const val = parseFloat(chordVolInput.value);
+    document.getElementById('chord-vol-val').innerText = val.toFixed(2);
+    if (engine) engine.setPadVolume(val);
+}
+
 function resetSchedulerTiming(offset = 0.12) {
     if (!engine) return;
 
@@ -659,6 +673,8 @@ startBtn.addEventListener('click', async function() {
     await engine.resume();
     engine.updateLeadTremolo(state.bpm);
     syncDrumVolume();
+    syncMelodyVolume();
+    syncChordVolume();
     console.log("Audio Context Started");
 
     // 新增：初始化雷声噪声生成器
@@ -702,6 +718,8 @@ document.getElementById('drums-toggle').addEventListener('change', (e) => {
 });
 
 drumVolInput.addEventListener('input', syncDrumVolume);
+melodyVolInput.addEventListener('input', syncMelodyVolume);
+chordVolInput.addEventListener('input', syncChordVolume);
 
 drumFillBtn.addEventListener('change', () => {
     if (!state.isPlaying || !state.isDrumsEnabled) {
