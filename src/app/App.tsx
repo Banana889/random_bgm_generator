@@ -56,6 +56,7 @@ const initialState: AppState = {
 };
 
 const toneStates = TONE_STATES;
+const assetBaseUrl = import.meta.env.BASE_URL;
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -564,7 +565,7 @@ export default function App() {
       <section className="output-panel" aria-label="Session output">
         <div className="panel-header">
           <div className="brand-lockup">
-            <img src="/static/driftone-icon-1024.svg" alt="Driftone logo" className="brand-logo" />
+            <img src={`${assetBaseUrl}static/driftone-icon-1024.svg`} alt="Driftone logo" className="brand-logo" />
             <h1>Driftone</h1>
           </div>
           <p>Generative ambient music and white noise, anchored in a tranquil harbor.</p>
@@ -593,7 +594,7 @@ export default function App() {
             <span className="section-label">TONE STATE</span>
             <p>Load a full sound state.</p>
           </div>
-          <div className="control-group preset-row"><label htmlFor="tone-state">STATE</label><select id="tone-state" value={state.toneStateKey} onChange={(event) => applyToneState(event.target.value)}>{toneStateKeys.map((key) => <option key={key} value={key}>{toneStates[key].name}</option>)}</select><button type="button" className="dice-btn" aria-label="Random tone state" onClick={() => { const keys = toneStateKeys.filter((key) => key !== stateRef.current.toneStateKey); applyToneState((keys.length ? keys : toneStateKeys)[Math.floor(Math.random() * (keys.length ? keys.length : toneStateKeys.length))]); }}><img src="/static/dice-5-fill.svg" alt="" aria-hidden="true" /></button></div>
+          <div className="control-group preset-row"><label htmlFor="tone-state">STATE</label><select id="tone-state" value={state.toneStateKey} onChange={(event) => applyToneState(event.target.value)}>{toneStateKeys.map((key) => <option key={key} value={key}>{toneStates[key].name}</option>)}</select><button type="button" className="dice-btn" aria-label="Random tone state" onClick={() => { const keys = toneStateKeys.filter((key) => key !== stateRef.current.toneStateKey); applyToneState((keys.length ? keys : toneStateKeys)[Math.floor(Math.random() * (keys.length ? keys.length : toneStateKeys.length))]); }}><img src={`${assetBaseUrl}static/dice-5-fill.svg`} alt="" aria-hidden="true" /></button></div>
         </div>
 
         <section className="control-panel" aria-label="Session controls">

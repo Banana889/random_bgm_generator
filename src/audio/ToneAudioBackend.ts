@@ -7,6 +7,12 @@ export type PadStyle = 'block' | 'strum' | 'arpeggio';
 
 type RatioSynth = Tone.PolySynth<Tone.Synth> & { _ratio?: number };
 
+const assetBaseUrl = import.meta.env.BASE_URL;
+
+function assetUrl(path: string): string {
+  return `${assetBaseUrl}${path}`;
+}
+
 export class ToneAudioBackend {
   private reverb: Tone.Reverb;
   private padFilter: Tone.AutoFilter;
@@ -56,14 +62,14 @@ export class ToneAudioBackend {
     this.hihat = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.035, sustain: 0, release: 0.02 } }).connect(this.hihatFilter);
     this.hihat.volume.value = -21;
     this.drumPlayers = new Tone.Players({
-      kick: '/res/drums/kick.mp3',
-      snare: '/res/drums/snare.mp3',
-      hihat: '/res/drums/hihat.mp3',
-      hihatHeavy: '/res/drums/hihat-heavy.mp3',
-      tomLow: '/res/drums/tom-low.mp3',
-      tomMid: '/res/drums/tom-mid.mp3',
-      tomHigh: '/res/drums/tom-high.mp3',
-      crash: '/res/drums/crash.mp3'
+      kick: assetUrl('res/drums/kick.mp3'),
+      snare: assetUrl('res/drums/snare.mp3'),
+      hihat: assetUrl('res/drums/hihat.mp3'),
+      hihatHeavy: assetUrl('res/drums/hihat-heavy.mp3'),
+      tomLow: assetUrl('res/drums/tom-low.mp3'),
+      tomMid: assetUrl('res/drums/tom-mid.mp3'),
+      tomHigh: assetUrl('res/drums/tom-high.mp3'),
+      crash: assetUrl('res/drums/crash.mp3')
     }).connect(this.drumVolume);
     this.drumPlayers.player('kick').volume.value = -8;
     this.drumPlayers.player('snare').volume.value = -10;
@@ -79,7 +85,7 @@ export class ToneAudioBackend {
     this.rainFilter = new Tone.AutoFilter({ frequency: 0.1, depth: 0.5, baseFrequency: 600 });
     this.rainVolume = new Tone.Volume(-Infinity);
     this.rainNoise.chain(this.rainFilter, this.rainVolume, this.reverb);
-    this.rainPlayer = new Tone.Player({ url: '/res/rain.mp3', loop: true, autostart: false, fadeIn: 2, fadeOut: 2 }).toDestination();
+    this.rainPlayer = new Tone.Player({ url: assetUrl('res/rain.mp3'), loop: true, autostart: false, fadeIn: 2, fadeOut: 2 }).toDestination();
     this.rainPlayer.volume.value = -10;
     this.setInstrument(initialInstrumentKey);
   }
