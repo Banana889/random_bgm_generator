@@ -8,12 +8,21 @@ export type PadStyle = 'block' | 'strum' | 'arpeggio';
 type RatioSynth = Tone.PolySynth<Tone.Synth> & { _ratio?: number };
 
 const assetBaseUrl = import.meta.env.BASE_URL;
+let isToneContextConfigured = false;
 
 function assetUrl(path: string): string {
   return `${assetBaseUrl}${path}`;
 }
 
+function configureToneContext(): void {
+  if (isToneContextConfigured) return;
+  Tone.setContext(new Tone.Context({ latencyHint: 'playback', lookAhead: 0.18, updateInterval: 0.04 }));
+  isToneContextConfigured = true;
+}
+
 export class ToneAudioBackend {
+  private masterCompressor: Tone.Compressor;
+  private masterLimiter: Tone.Limiter;
   private reverb: Tone.Reverb;
   private padFilter: Tone.AutoFilter;
   private padTremolo: Tone.Tremolo;
@@ -33,15 +42,15 @@ export class ToneAudioBackend {
   private hihatFilter: Tone.Filter;
   private hihat: Tone.NoiseSynth;
   private drumPlayers: Tone.Players;
-  private rainNoise: Tone.Noise;
-  private rainFilter: Tone.AutoFilter;
-  private rainVolume: Tone.Volume;
   private rainPlayer: Tone.Player;
   private isRainPlayerStarted = false;
   private isStarted = false;
 
   constructor(initialInstrumentKey: string) {
-    this.reverb = new Tone.Reverb({ decay: 4, preDelay: 0.2, wet: 0.4 }).toDestination();
+    configureToneContext();
+    this.masterLimiter = new Tone.Limiter(-1).toDestination();
+    this.masterCompressor = new Tone.Compressor({ threshold: -14, ratio: 3, attack: 0.01, release: 0.18 }).connect(this.masterLimiter);
+    this.reverb = new Tone.Reverb({ decay: 4, preDelay: 0.2, wet: 0.4 }).connect(this.masterCompressor);
     void this.reverb.generate();
     this.padFilter = new Tone.AutoFilter({ frequency: 0.2, baseFrequency: 200, octaves: 3, depth: 0.7, type: 'sine' });
     this.padTremolo = new Tone.Tremolo({ frequency: 3, depth: 0.2, spread: 180 });
@@ -50,7 +59,7 @@ export class ToneAudioBackend {
     this.leadSynth = new Tone.PolySynth(Tone.FMSynth);
     this.leadVolumeNode = new Tone.Volume(0).connect(this.reverb);
 
-    this.drumVolume = new Tone.Volume(0).toDestination();
+    this.drumVolume = new Tone.Volume(0).connect(this.masterCompressor);
     this.kick = new Tone.MembraneSynth({ pitchDecay: 0.045, octaves: 3.5, oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.14, sustain: 0, release: 0.18 } }).connect(this.drumVolume);
     this.kick.volume.value = -7;
     this.snareFilter = new Tone.Filter({ type: 'bandpass', frequency: 2200, Q: 1 }).connect(this.drumVolume);
@@ -81,11 +90,7 @@ export class ToneAudioBackend {
     this.drumPlayers.player('crash').volume.value = -23;
     this.setDrumVolume(0.5);
 
-    this.rainNoise = new Tone.Noise('pink');
-    this.rainFilter = new Tone.AutoFilter({ frequency: 0.1, depth: 0.5, baseFrequency: 600 });
-    this.rainVolume = new Tone.Volume(-Infinity);
-    this.rainNoise.chain(this.rainFilter, this.rainVolume, this.reverb);
-    this.rainPlayer = new Tone.Player({ url: assetUrl('res/rain.mp3'), loop: true, autostart: false, fadeIn: 2, fadeOut: 2 }).toDestination();
+    this.rainPlayer = new Tone.Player({ url: assetUrl('res/rain.mp3'), loop: true, autostart: false, fadeIn: 2, fadeOut: 2 }).connect(this.masterCompressor);
     this.rainPlayer.volume.value = -10;
     this.setInstrument(initialInstrumentKey);
   }
@@ -131,11 +136,9 @@ export class ToneAudioBackend {
 
   toggleRain(isEnabled: boolean): void {
     if (isEnabled) {
-      this.rainVolume.volume.rampTo(-15, 2);
       if (this.rainPlayer.loaded) this.startRainAtRandomPosition();
       else void Tone.loaded().then(() => this.startRainAtRandomPosition());
     } else {
-      this.rainVolume.volume.rampTo(-Infinity, 2);
       if (this.isRainPlayerStarted) this.rainPlayer.stop();
       this.isRainPlayerStarted = false;
     }
@@ -265,8 +268,6 @@ export class ToneAudioBackend {
     if (this.isStarted) return;
     this.padFilter.start();
     this.padTremolo.start();
-    this.rainFilter.start();
-    this.rainNoise.start();
     this.leadTremolo?.start();
     this.isStarted = true;
   }

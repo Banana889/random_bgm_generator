@@ -10,7 +10,7 @@ import { generateNewMotif, getNextChordKey, pickGoHomeNote } from '../music/comp
 import { createTimerWorker } from '../platform/createTimerWorker';
 import type { AppState, DrumTrailEvent, MelodyTrailEvent, TabKey } from './types';
 
-const SCHEDULE_LOOKAHEAD = 0.18;
+const SCHEDULE_LOOKAHEAD = 0.25;
 const MAX_MELODY_TRAIL = 64;
 const MAX_DRUM_TRAIL = 160;
 const VISUAL_FLOW_SECONDS = 7.2;
