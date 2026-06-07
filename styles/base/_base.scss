@@ -1,0 +1,72 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #121615;
+    --panel: rgba(23, 29, 28, 0.78);
+    --panel-soft: rgba(42, 169, 169, 0.06);
+    --panel-strong: rgba(42, 169, 169, 0.11);
+    --line: rgba(42, 169, 169, 0.25);
+    --line-muted: rgba(206, 232, 224, 0.12);
+    --text: #e5f5ef;
+    --muted: #93aaa2;
+    --accent: #2aa9a9;
+    --accent-warm: #f26d6d;
+    --accent-soft: rgba(42, 169, 169, 0.18);
+    --accent-warm-soft: rgba(242, 109, 109, 0.14);
+    --shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    padding: 32px;
+    background:
+        radial-gradient(circle at 18% 18%, rgba(42, 169, 169, 0.16), transparent 34%),
+        radial-gradient(circle at 86% 74%, rgba(242, 109, 109, 0.11), transparent 30%),
+        var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', Courier, monospace;
+    overflow: hidden;
+}
+
+#rain-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+button,
+select,
+input {
+    font-family: inherit;
+}
+
+label,
+h3,
+.section-label {
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+label {
+    color: var(--muted);
+    font-size: 0.76rem;
+}
+
+h3 {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.section-label {
+    color: var(--accent);
+    font-size: 0.72rem;
+}

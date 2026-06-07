@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="static/driftone-icon-1024.svg" alt="Driftone icon" width="64" align="absmiddle" /> Driftone
+  <img src="public/static/driftone-icon-1024.svg" alt="Driftone icon" width="64" align="absmiddle" /> Driftone
 </h1>
 
 <p align="center"><strong>Generative ambient music and white noise, anchored in a tranquil harbor.</strong></p>
@@ -18,29 +18,36 @@
 Driftone is a browser-based experiment in generative ambient music.
 It combines simple harmony rules, evolving melody logic, selectable instruments, and environmental noise to create an endless soundscape.
 
-![Screenshot](./static/screenshot.png)
+![Screenshot](./docs/assets/screenshot.png)
 
 ## Run
 
 Try it online on my [GitHub Pages site](https://banana889.github.io/Driftone/).
 
-Or serve the project over a local HTTP server:
+For development:
 
 ```bash
-python -m http.server 8000
+npm install
+npm run dev
 ```
 
-Then open:
+For production verification:
 
-- `http://localhost:8000/`
-- `http://localhost:8000/demo.html`
-- `http://localhost:8000/demo2_with_chords.html`
+```bash
+npm run build
+npm test
+```
 
-Running it directly via `file://` is not recommended.
-The app uses a Web Worker (`js/worker.js`) and audio assets such as `res/rain.mp3`, which browsers often restrict outside a local server context.
+Running it directly via `file://` is not recommended. The app uses Web Audio, a worker-backed scheduler, and audio assets such as `public/res/rain.mp3`, which browsers often restrict outside a local server context.
+
+## Architecture
+
+The main app has migrated to Vite, React, TypeScript, SCSS, and npm-local Tone.js.
+
+See [docs/migration.md](./docs/migration.md) for migration details.
 
 ## Roadmap
 
-See the roadmap in [TODO.md](./TODO.md).
+See [docs/TODO.md](./docs/TODO.md).
 
 If you enjoy Driftone, consider giving this repo a star.

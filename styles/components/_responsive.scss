@@ -1,0 +1,49 @@
+@media (max-width: 860px) {
+    body {
+        padding: 16px;
+        overflow: auto;
+    }
+
+    .app-shell {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: auto;
+    }
+
+    .right-stack {
+        min-height: auto;
+    }
+
+    #log {
+        flex: 0 0 auto;
+        min-height: 104px;
+        max-height: 24vh;
+    }
+}
+
+@media (max-width: 600px) {
+    .control-panel,
+    .output-panel {
+        padding: 18px;
+        border-radius: 18px;
+    }
+
+    .display-area {
+        grid-template-columns: 1fr;
+    }
+
+    .chord-box {
+        min-height: 170px;
+    }
+
+    .range-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    #log {
+        max-height: 160px;
+        padding: 12px;
+        font-size: 0.76rem;
+    }
+}

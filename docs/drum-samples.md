@@ -29,3 +29,5 @@ Original files used:
 - `cy8/CY5050.WAV` -> `crash.mp3`
 
 If any file is removed or still loading, Driftone falls back to the built-in synthesized drum sound.
+
+Runtime samples live in `public/res/drums/` so Vite can copy them into the production build.

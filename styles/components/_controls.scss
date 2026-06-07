@@ -1,0 +1,306 @@
+.tab-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin: 20px 0;
+    margin-top: auto;
+    padding: 4px;
+    border: 1px solid var(--line-muted);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.tab-button,
+#start-btn {
+    border: 1px solid var(--line);
+    color: var(--accent);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+.tab-button {
+    min-width: 0;
+    padding: 10px 8px;
+    border-color: transparent;
+    border-radius: 999px;
+    background: transparent;
+    text-align: center;
+    font-size: 0.78rem;
+
+    &:hover,
+    &.active {
+        border-color: var(--line);
+        background: var(--accent-soft);
+        color: var(--text);
+    }
+}
+
+.tab-panels {
+    flex: 1;
+    min-height: 0;
+}
+
+.tab-panel {
+    display: grid;
+    gap: 18px;
+
+    &[hidden] {
+        display: none;
+    }
+}
+
+.control-section {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--line-muted);
+    border-radius: 18px;
+    background: linear-gradient(180deg, var(--panel-soft), rgba(0, 0, 0, 0.14));
+}
+
+.preset-card {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(42, 169, 169, 0.1), rgba(0, 0, 0, 0.2));
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+}
+
+.section-heading {
+    display: grid;
+    gap: 6px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line-muted);
+
+    p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.5;
+    }
+}
+
+.control-group,
+.ambience-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.inline-control {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+select,
+input {
+    width: 100%;
+    max-width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #101514;
+    color: var(--accent);
+    padding: 10px;
+}
+
+input[type="checkbox"] {
+    width: auto;
+    accent-color: var(--accent);
+}
+
+input[type="range"] {
+    padding: 0;
+    accent-color: var(--accent);
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 46px;
+    height: 24px;
+
+    input {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        opacity: 0;
+        cursor: pointer;
+
+        &:checked + .slider {
+            border-color: var(--accent);
+            background: var(--accent);
+            box-shadow: 0 0 18px rgba(42, 169, 169, 0.18);
+        }
+
+        &:checked + .slider::before {
+            transform: translateX(22px);
+            background: #071111;
+        }
+    }
+}
+
+.slider {
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.22);
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+
+    &::before {
+        content: "";
+        position: absolute;
+        left: 3px;
+        bottom: 3px;
+        width: 16px;
+        height: 16px;
+        background: rgba(229, 245, 239, 0.78);
+        transition: transform 0.2s, background 0.2s;
+    }
+
+    &.round,
+    &.round::before {
+        border-radius: 999px;
+    }
+}
+
+.fill-control {
+    &.is-queued label,
+    &.is-active label {
+        color: var(--text);
+    }
+
+    &.is-queued .slider {
+        background: var(--accent);
+    }
+
+    &.is-active .slider {
+        border-color: var(--accent-warm);
+        background: var(--accent-warm);
+        box-shadow: 0 0 20px rgba(242, 109, 109, 0.24);
+    }
+}
+
+.ambience-stack {
+    gap: 14px;
+}
+
+.range-row {
+    display: grid;
+    grid-template-columns: 86px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+
+    label {
+        white-space: nowrap;
+    }
+}
+
+.range-control {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) 16px;
+    align-items: center;
+    gap: 6px;
+
+    input[type="range"] {
+        grid-column: 2;
+    }
+
+    span {
+        color: var(--accent);
+        font-size: 0.86rem;
+        letter-spacing: 0.08em;
+        text-align: center;
+    }
+}
+
+.preset-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+
+    label {
+        margin: 0;
+    }
+
+    select {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+.dice-btn {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--line-muted);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+
+    img {
+        display: block;
+        width: 15px;
+        height: 15px;
+        margin: auto;
+        opacity: 0.84;
+    }
+
+    &:hover {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent);
+        transform: translateY(-1px);
+
+        img {
+            opacity: 1;
+        }
+    }
+
+    &:active {
+        transform: translateY(0) scale(0.94);
+    }
+}
+
+.session-actions {
+    display: block;
+    margin-top: auto;
+}
+
+#start-btn {
+    width: 100%;
+    min-height: 54px;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--accent);
+    color: #071111;
+    font-size: 1rem;
+    font-weight: 700;
+    box-shadow: 0 10px 28px rgba(42, 169, 169, 0.18);
+
+    &:hover {
+        transform: translateY(-1px);
+        border-color: rgba(242, 109, 109, 0.4);
+        background: #35bcbc;
+        color: #071111;
+        box-shadow: 0 14px 34px rgba(42, 169, 169, 0.24), 0 0 18px rgba(242, 109, 109, 0.12);
+    }
+}
