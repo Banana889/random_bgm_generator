@@ -43,7 +43,7 @@ export class NoiseGenerator {
     this.gainNode.gain.value = 0;
     this.source.connect(this.filter);
     this.filter.connect(this.gainNode);
-    Tone.connect(this.gainNode, Tone.Destination);
+    this.gainNode.connect(this.ctx.destination);
     this.source.start();
   }
 
