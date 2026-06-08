@@ -26,7 +26,7 @@ export const INSTRUMENT_PRESETS: Record<string, InstrumentPreset> = {
     pad: {
       oscillator: { type: 'sine', count: 10, spread: 30 },
       envelope: { attack: 1.0, decay: 3.0, sustain: 0.5, release: 2.0 },
-      volume: -12
+      volume: -10
     },
     lead: {
       oscillator: { type: 'fmsine', modulationType: 'sine', modulationIndex: 2, harmonicity: 3.0 },
@@ -40,7 +40,7 @@ export const INSTRUMENT_PRESETS: Record<string, InstrumentPreset> = {
     pad: {
       oscillator: { type: 'fattriangle', count: 3, spread: 20 },
       envelope: { attack: 2.0, decay: 3.0, sustain: 0.5, release: 2.0 },
-      volume: -12
+      volume: -10
     },
     lead: {
       oscillator: { type: 'triangle' },
@@ -53,7 +53,7 @@ export const INSTRUMENT_PRESETS: Record<string, InstrumentPreset> = {
     pad: {
       oscillator: { type: 'fatsawtooth', count: 3, spread: 40 },
       envelope: { attack: 1.5, decay: 4.0, sustain: 0.7, release: 3.0 },
-      volume: -15
+      volume: -6
     },
     lead: {
       oscillator: { type: 'fmsine', modulationType: 'sine', modulationIndex: 3, harmonicity: 3 },
@@ -78,7 +78,7 @@ export const INSTRUMENT_PRESETS: Record<string, InstrumentPreset> = {
     name: 'Wind Bell',
     pad: {
       oscillator: { type: 'fmsine', modulationIndex: 10, harmonicity: 1 },
-      envelope: { attack: 0.1, decay: 1.5, sustain: 0.2, release: 1.0 },
+      envelope: { attack: 1, decay: 1.5, sustain: 0.2, release: 1.0 },
       volume: -5
     },
     lead: {
@@ -88,7 +88,7 @@ export const INSTRUMENT_PRESETS: Record<string, InstrumentPreset> = {
         { ratio: 10.2, amp: 0.1 },
         { ratio: 13.14, amp: 0.03 }
       ],
-      volume: -8,
+      volume: -10,
       envelope: { attack: 0.01, decay: 0.5, sustain: 0.5, release: 0.5 }
     }
   }
