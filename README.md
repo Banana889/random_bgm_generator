@@ -11,12 +11,12 @@
   <img src="https://img.shields.io/badge/Audio-Tone.js-00ACC1?style=for-the-badge" alt="Tone.js audio engine" />
 </p>
 
-> Based on Tone.js, ~~Gemini~~, and our poor music theory...
->
-> Developing...
+> Based on Tone.js, ~~LLM~~, and our poor music theory...
 
 Driftone is a browser-based experiment in generative ambient music.
 It combines simple harmony rules, evolving melody logic, selectable instruments, and environmental noise to create an endless soundscape.
+
+If you often find yourself distracted by picking a playlist before getting to work, or if the music platforms keep recommending songs that don't quite fit your focus vibe, give this little relaxing website a try. 💙
 
 ![Driftone demo](./docs/assets/driftone.gif)
 
