@@ -647,12 +647,12 @@ export default function App() {
           <div className="control-group preset-row"><label htmlFor="tone-state">STATE</label><select id="tone-state" value={state.toneStateKey} onChange={(event) => applyToneState(event.target.value)}>{toneStateKeys.map((key) => <option key={key} value={key}>{toneStates[key].name}</option>)}</select><button type="button" className={`dice-btn${diceRollId ? ' is-rolling' : ''}`} aria-label="Random tone state" onClick={randomizeToneState}><span className="dice-scene" aria-hidden="true"><span key={diceRollId} className={`dice-cube dice-current-${diceStateFace}`}>{diceFaces.map((face) => <span key={face} className={`dice-face dice-face-${face}`} style={{ backgroundImage: `url(${assetBaseUrl}static/dice-face-${face}.svg)` }} />)}</span></span></button></div>
         </div>
 
-        <button type="button" className="mobile-config-toggle" aria-expanded={isMobileConfigOpen} aria-controls="control-panel" onClick={() => setIsMobileConfigOpen((open) => !open)}>{isMobileConfigOpen ? 'Close Settings' : 'Configure Sound'}</button>
+        <button type="button" className="mobile-config-toggle" aria-label="Configure sound" aria-expanded={isMobileConfigOpen} aria-controls="control-panel" onClick={() => setIsMobileConfigOpen((open) => !open)}><span aria-hidden="true" /></button>
 
         <section id="control-panel" className={`control-panel${isMobileConfigOpen ? ' is-open' : ''}`} aria-label="Session controls">
           <div className="mobile-panel-header">
             <span>Sound Settings</span>
-            <button type="button" onClick={() => setIsMobileConfigOpen(false)}>Close</button>
+            <button type="button" aria-label="Close sound settings" onClick={() => setIsMobileConfigOpen(false)}>×</button>
           </div>
           <div className="tab-list" role="tablist" aria-label="Control sections">
             {(['melody', 'rhythm', 'ambience'] as TabKey[]).map((tab) => <button key={tab} className={`tab-button ${state.activeTab === tab ? 'active' : ''}`} type="button" role="tab" aria-selected={state.activeTab === tab} onClick={() => patchState({ activeTab: tab })}>{tab[0].toUpperCase() + tab.slice(1)}</button>)}
