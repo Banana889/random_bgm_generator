@@ -1,49 +1,227 @@
 @media (max-width: 860px) {
+    html,
     body {
-        padding: 16px;
-        overflow: auto;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body {
+        padding: 12px;
     }
 
     .app-shell {
         grid-template-columns: 1fr;
-        height: auto;
-        min-height: auto;
+        grid-template-rows: minmax(0, 1.15fr) minmax(0, 0.85fr);
+        gap: 10px;
+        height: calc(100dvh - 24px);
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .output-panel {
+        gap: 10px;
+        overflow: hidden;
+        padding: 14px;
+    }
+
+    .panel-header {
+        flex: 0 0 auto;
+        padding-bottom: 0;
+        border-bottom: 0;
+
+        h1 {
+            font-size: clamp(1.35rem, 7vw, 2rem);
+        }
+
+        p {
+            display: none;
+        }
+    }
+
+    .brand-lockup {
+        gap: 10px;
+        margin-bottom: 0;
+    }
+
+    .brand-logo {
+        width: 34px;
+        height: 34px;
+    }
+
+    .display-area {
+        flex: 0 0 auto;
+        grid-template-columns: 1.35fr 0.65fr;
+        gap: 8px;
+        order: 3;
+    }
+
+    .chord-box {
+        min-height: 58px;
+        padding: 10px 12px;
+        border-radius: 14px;
+
+        h3 {
+            font-size: 0.58rem;
+        }
+
+        h1 {
+            margin: 7px 0 0;
+            font-size: clamp(1.18rem, 7vw, 2rem);
+        }
+    }
+
+    #chord-detail {
+        display: none;
+    }
+
+    .melody-trail {
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 8px;
+        order: 2;
+    }
+
+    .trail-stage {
+        height: 100%;
+        min-height: 132px;
     }
 
     .right-stack {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 8px;
         min-height: auto;
+        overflow: hidden;
+    }
+
+    .preset-card {
+        gap: 8px;
+        padding: 10px;
+        border-radius: 16px;
+    }
+
+    .preset-card .section-heading {
+        display: none;
+    }
+
+    .preset-row {
+        gap: 8px;
+
+        label {
+            flex: 0 0 auto;
+            font-size: 0.62rem;
+        }
+    }
+
+    .dice-btn {
+        width: 30px;
+        height: 30px;
+    }
+
+    .control-panel {
+        min-height: 0;
+        overflow: hidden;
+        padding: 10px;
+        border-radius: 16px;
+    }
+
+    .tab-list {
+        flex: 0 0 auto;
+        margin: 0 0 8px;
+    }
+
+    .tab-button {
+        padding: 8px 6px;
+        font-size: 0.68rem;
+    }
+
+    .tab-panels {
+        overflow: hidden;
+    }
+
+    .tab-panel {
+        gap: 8px;
+    }
+
+    .control-section {
+        gap: 8px;
+        padding: 10px;
+        border-radius: 14px;
+    }
+
+    .section-heading {
+        gap: 0;
+        padding-bottom: 7px;
+
+        p {
+            display: none;
+        }
+    }
+
+    .section-label {
+        font-size: 0.62rem;
+    }
+
+    .control-group,
+    .ambience-stack {
+        gap: 6px;
+    }
+
+    label {
+        font-size: 0.66rem;
+    }
+
+    select,
+    input {
+        padding: 8px;
+    }
+
+    .range-row {
+        grid-template-columns: 72px minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .session-actions {
+        flex: 0 0 auto;
+        margin-top: 0;
+    }
+
+    #start-btn {
+        min-height: 46px;
+        padding: 11px 16px;
     }
 
     #log {
-        flex: 0 0 auto;
-        min-height: 104px;
-        max-height: 24vh;
+        display: none;
     }
 }
 
 @media (max-width: 600px) {
     .control-panel,
     .output-panel {
-        padding: 18px;
+        padding: 10px;
         border-radius: 18px;
     }
 
-    .display-area {
-        grid-template-columns: 1fr;
-    }
-
     .chord-box {
-        min-height: 170px;
+        min-height: 54px;
+        padding: 9px 10px;
     }
 
     .range-row {
-        grid-template-columns: 1fr;
-        gap: 8px;
+        grid-template-columns: 64px minmax(0, 1fr);
+        gap: 6px;
     }
 
-    #log {
-        max-height: 160px;
-        padding: 12px;
-        font-size: 0.76rem;
+    .trail-stage {
+        min-height: 118px;
+    }
+
+    .control-section {
+        padding: 8px;
+    }
+
+    .tab-button {
+        padding: 7px 5px;
     }
 }
