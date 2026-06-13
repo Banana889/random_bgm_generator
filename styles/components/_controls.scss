@@ -69,6 +69,11 @@
     backdrop-filter: blur(18px);
 }
 
+.mobile-config-toggle,
+.mobile-panel-header {
+    display: none;
+}
+
 .section-heading {
     display: grid;
     gap: 6px;

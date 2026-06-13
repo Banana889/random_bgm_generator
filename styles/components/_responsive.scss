@@ -11,7 +11,7 @@
 
     .app-shell {
         grid-template-columns: 1fr;
-        grid-template-rows: minmax(0, 1.15fr) minmax(0, 0.85fr);
+        grid-template-rows: minmax(0, 1fr) auto;
         gap: 10px;
         height: calc(100dvh - 24px);
         min-height: 0;
@@ -88,10 +88,11 @@
 
     .right-stack {
         display: grid;
-        grid-template-rows: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto auto;
         gap: 8px;
         min-height: auto;
-        overflow: hidden;
+        overflow: visible;
     }
 
     .preset-card {
@@ -118,16 +119,68 @@
         height: 30px;
     }
 
+    .mobile-config-toggle {
+        display: block;
+        min-height: 46px;
+        padding: 11px 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.22);
+        color: var(--accent);
+        font-weight: 700;
+        cursor: pointer;
+    }
+
     .control-panel {
+        position: fixed;
+        inset: auto 12px 12px;
+        z-index: 20;
+        max-height: min(72dvh, 620px);
         min-height: 0;
-        overflow: hidden;
-        padding: 10px;
-        border-radius: 16px;
+        overflow: auto;
+        padding: 12px;
+        border-radius: 20px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.56);
+        transform: translateY(calc(100% + 24px));
+        opacity: 0;
+        pointer-events: none;
+        transition: transform 0.22s ease, opacity 0.22s ease;
+
+        &.is-open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+    }
+
+    .mobile-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--line-muted);
+        color: var(--text);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+
+        button {
+            border: 1px solid var(--line-muted);
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.22);
+            color: var(--accent);
+            padding: 7px 11px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
     }
 
     .tab-list {
         flex: 0 0 auto;
-        margin: 0 0 8px;
+        margin: 0 0 10px;
     }
 
     .tab-button {
@@ -136,7 +189,7 @@
     }
 
     .tab-panels {
-        overflow: hidden;
+        overflow: visible;
     }
 
     .tab-panel {
@@ -183,6 +236,7 @@
 
     .session-actions {
         flex: 0 0 auto;
+        grid-column: 1 / -1;
         margin-top: 0;
     }
 
