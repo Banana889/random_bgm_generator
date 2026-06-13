@@ -242,6 +242,10 @@ input[type="range"] {
 }
 
 .dice-btn {
+    position: relative;
+    overflow: visible;
+    --dice-size: 17px;
+    --dice-half: 8.5px;
     flex: 0 0 auto;
     width: 32px;
     height: 32px;
@@ -253,14 +257,35 @@ input[type="range"] {
     font-size: 1.05rem;
     line-height: 1;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+    display: grid;
+    place-items: center;
+    perspective: 180px;
+    perspective-origin: 50% 50%;
+    transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.18s, box-shadow 0.18s;
 
-    img {
-        display: block;
-        width: 15px;
-        height: 15px;
-        margin: auto;
-        opacity: 0.84;
+    &::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        background: linear-gradient(120deg, transparent 18%, rgba(154, 219, 210, 0.24) 44%, transparent 68%);
+        opacity: 0;
+        transform: translateX(-130%);
+        pointer-events: none;
+    }
+
+    &::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: 5px;
+        width: 18px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(42, 169, 169, 0.32);
+        filter: blur(4px);
+        opacity: 0.5;
+        transform: translateX(-50%) scaleX(0.74);
+        pointer-events: none;
     }
 
     &:hover {
@@ -268,14 +293,164 @@ input[type="range"] {
         background: var(--accent-soft);
         color: var(--accent);
         transform: translateY(-1px);
+        box-shadow: 0 7px 18px rgba(42, 169, 169, 0.16), inset 0 0 16px rgba(42, 169, 169, 0.08);
 
-        img {
-            opacity: 1;
+        &::after {
+            animation: dice-shadow 0.9s ease-out both;
+        }
+
+        .dice-cube {
+            animation: dice-cube-roll 0.84s cubic-bezier(0.24, 0.68, 0.2, 1) infinite;
         }
     }
 
     &:active {
         transform: translateY(0) scale(0.94);
+    }
+}
+
+.dice-scene {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: var(--dice-size);
+    height: var(--dice-size);
+    pointer-events: none;
+    transform: translateY(-1px) scale(0.8);
+    transform-style: preserve-3d;
+}
+
+.dice-cube {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    transform: rotateX(var(--dice-start-x, -24deg)) rotateY(var(--dice-start-y, 34deg)) rotateZ(-8deg);
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+.dice-current-1 {
+    --dice-start-x: -24deg;
+    --dice-start-y: 34deg;
+    --dice-end-x: 336deg;
+    --dice-end-y: 394deg;
+}
+
+.dice-current-2 {
+    --dice-start-x: -24deg;
+    --dice-start-y: 214deg;
+    --dice-end-x: 336deg;
+    --dice-end-y: 574deg;
+}
+
+.dice-current-3 {
+    --dice-start-x: -24deg;
+    --dice-start-y: -56deg;
+    --dice-end-x: 336deg;
+    --dice-end-y: 304deg;
+}
+
+.dice-current-4 {
+    --dice-start-x: -24deg;
+    --dice-start-y: 124deg;
+    --dice-end-x: 336deg;
+    --dice-end-y: 484deg;
+}
+
+.dice-current-5 {
+    --dice-start-x: -114deg;
+    --dice-start-y: 34deg;
+    --dice-end-x: 246deg;
+    --dice-end-y: 394deg;
+}
+
+.dice-current-6 {
+    --dice-start-x: 66deg;
+    --dice-start-y: 34deg;
+    --dice-end-x: 426deg;
+    --dice-end-y: 394deg;
+}
+
+.dice-face {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    background: #9adbd2 var(--dice-face-url) center / cover no-repeat;
+    box-shadow: inset 0 0 0 1px rgba(7, 17, 17, 0.36), inset 0 6px 9px rgba(255, 255, 255, 0.18), inset 0 -7px 10px rgba(7, 17, 17, 0.22);
+    backface-visibility: visible;
+}
+
+.dice-face-1 {
+    transform: translateZ(var(--dice-half));
+}
+
+.dice-face-2 {
+    transform: rotateY(180deg) translateZ(var(--dice-half));
+}
+
+.dice-face-3 {
+    transform: rotateY(90deg) translateZ(var(--dice-half));
+}
+
+.dice-face-4 {
+    transform: rotateY(-90deg) translateZ(var(--dice-half));
+}
+
+.dice-face-5 {
+    transform: rotateX(90deg) translateZ(var(--dice-half));
+}
+
+.dice-face-6 {
+    transform: rotateX(-90deg) translateZ(var(--dice-half));
+}
+
+@keyframes dice-cube-roll {
+    0% {
+        transform: rotateX(var(--dice-start-x, -24deg)) rotateY(var(--dice-start-y, 34deg)) rotateZ(-8deg);
+    }
+
+    26% {
+        transform: rotateX(calc(var(--dice-start-x, -24deg) + 112deg)) rotateY(calc(var(--dice-start-y, 34deg) + 88deg)) rotateZ(3deg) scale(1.025);
+    }
+
+    55% {
+        transform: rotateX(calc(var(--dice-start-x, -24deg) + 236deg)) rotateY(calc(var(--dice-start-y, 34deg) + 218deg)) rotateZ(-2deg) scale(1.018);
+    }
+
+    82% {
+        transform: rotateX(calc(var(--dice-end-x, 336deg) - 26deg)) rotateY(calc(var(--dice-end-y, 394deg) - 22deg)) rotateZ(-6deg) scale(1.006);
+    }
+
+    100% {
+        transform: rotateX(var(--dice-end-x, 336deg)) rotateY(var(--dice-end-y, 394deg)) rotateZ(-8deg);
+    }
+}
+
+@keyframes dice-shadow {
+    0%,
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) scaleX(0.7);
+    }
+
+    36%,
+    72% {
+        opacity: 1;
+        transform: translateX(-50%) scaleX(1.35);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dice-btn:hover {
+        .dice-cube,
+        &::after {
+            animation: none;
+        }
     }
 }
 

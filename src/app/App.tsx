@@ -57,6 +57,7 @@ const initialState: AppState = {
 
 const toneStates = TONE_STATES;
 const assetBaseUrl = import.meta.env.BASE_URL;
+const diceFaces = [1, 2, 3, 4, 5, 6];
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -98,6 +99,7 @@ export default function App() {
   const beatUnit = state.beatsPerBar === 6 ? '♩.' : '♩';
   const beatUnitTitle = state.beatsPerBar === 6 ? 'One beat equals a dotted quarter note' : 'One beat equals a quarter note';
   const toneStateKeys = useMemo(() => Object.keys(toneStates), []);
+  const diceStateFace = Math.max(1, (toneStateKeys.indexOf(state.toneStateKey) % diceFaces.length) + 1);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -594,7 +596,7 @@ export default function App() {
             <span className="section-label">TONE STATE</span>
             <p>Load a full sound state.</p>
           </div>
-          <div className="control-group preset-row"><label htmlFor="tone-state">STATE</label><select id="tone-state" value={state.toneStateKey} onChange={(event) => applyToneState(event.target.value)}>{toneStateKeys.map((key) => <option key={key} value={key}>{toneStates[key].name}</option>)}</select><button type="button" className="dice-btn" aria-label="Random tone state" onClick={() => { const keys = toneStateKeys.filter((key) => key !== stateRef.current.toneStateKey); applyToneState((keys.length ? keys : toneStateKeys)[Math.floor(Math.random() * (keys.length ? keys.length : toneStateKeys.length))]); }}><img src={`${assetBaseUrl}static/dice-5-fill.svg`} alt="" aria-hidden="true" /></button></div>
+          <div className="control-group preset-row"><label htmlFor="tone-state">STATE</label><select id="tone-state" value={state.toneStateKey} onChange={(event) => applyToneState(event.target.value)}>{toneStateKeys.map((key) => <option key={key} value={key}>{toneStates[key].name}</option>)}</select><button type="button" className="dice-btn" aria-label="Random tone state" onClick={() => { const keys = toneStateKeys.filter((key) => key !== stateRef.current.toneStateKey); applyToneState((keys.length ? keys : toneStateKeys)[Math.floor(Math.random() * (keys.length ? keys.length : toneStateKeys.length))]); }}><span className="dice-scene" aria-hidden="true"><span className={`dice-cube dice-current-${diceStateFace}`}>{diceFaces.map((face) => <span key={face} className={`dice-face dice-face-${face}`} style={{ '--dice-face-url': `url(${assetBaseUrl}static/dice-face-${face}.svg)` } as React.CSSProperties} />)}</span></span></button></div>
         </div>
 
         <section className="control-panel" aria-label="Session controls">
