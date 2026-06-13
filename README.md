@@ -18,7 +18,7 @@
 Driftone is a browser-based experiment in generative ambient music.
 It combines simple harmony rules, evolving melody logic, selectable instruments, and environmental noise to create an endless soundscape.
 
-![Screenshot](./docs/assets/screenshot.png)
+![Driftone demo](./docs/assets/driftone.gif)
 
 ## Run
 
