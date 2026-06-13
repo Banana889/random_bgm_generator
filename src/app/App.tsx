@@ -137,6 +137,10 @@ export default function App() {
   }, [state.bpm]);
 
   useEffect(() => {
+    engineRef.current?.toggleRain(state.isPlaying && state.rainEnabled);
+  }, [state.isPlaying, state.rainEnabled]);
+
+  useEffect(() => {
     syncThunderNoiseControls();
   }, [state.isPlaying, state.rainEnabled, state.thunderEnabled, state.thunderVolume, state.thunderDistance, state.thunderCharacter]);
 
@@ -234,10 +238,11 @@ export default function App() {
     }
 
     if (visualizerRef.current) {
-      visualizerRef.current.setIntensity(current.rainEnabled ? 0.45 : 0);
+      const isRaining = current.isPlaying && current.rainEnabled;
+      visualizerRef.current.setIntensity(isRaining ? 0.45 : 0);
       visualizerRef.current.setTone(400);
       visualizerRef.current.setWind(character * 2);
-      visualizerRef.current.toggle(current.rainEnabled);
+      visualizerRef.current.toggle(isRaining);
       visualizerRef.current.setThunder(current.isPlaying && current.thunderEnabled, current.thunderVolume, current.thunderDistance);
     }
   }
@@ -522,7 +527,6 @@ export default function App() {
       engineRef.current?.setLeadVolume(next.melodyVolume);
       engineRef.current?.setPadVolume(next.chordVolume);
       engineRef.current?.setDrumVolume(next.drumVolume);
-      engineRef.current?.toggleRain(next.rainEnabled);
       stateRef.current = next;
       return next;
     });
@@ -614,7 +618,7 @@ export default function App() {
               <ControlSection label="PULSE" text="Control the tempo and percussion layer."><Switch label="DRUMS" checked={state.isDrumsEnabled} onChange={toggleDrums} /><Range label={`DRUM VOL: ${formatVolume(state.drumVolume)}`} value={state.drumVolume} min={0} max={1} step={0.01} onChange={(drumVolume) => patchState({ drumVolume })} /><Switch label="FILL" checked={state.isDrumFillEnabled} onChange={(isDrumFillEnabled) => patchState({ isDrumFillEnabled: state.isPlaying && state.isDrumsEnabled ? isDrumFillEnabled : false, drumFillBarsUntilAuto: AUTO_DRUM_FILL_INTERVAL_BARS })} className={`control-group inline-control fill-control${state.drumFillActive ? ' is-active' : state.drumFillQueued ? ' is-queued' : ''}`} /></ControlSection>
             </div>
             <div className="tab-panel" role="tabpanel" data-panel="ambience" hidden={state.activeTab !== 'ambience'}>
-              <ControlSection label="RAIN" text="Enable the ambient rain layer."><Switch label="Rain Ambience" checked={state.rainEnabled} onChange={(rainEnabled) => { engineRef.current?.toggleRain(rainEnabled); patchState({ rainEnabled }); }} /></ControlSection>
+              <ControlSection label="RAIN" text="Enable the ambient rain layer."><Switch label="Rain Ambience" checked={state.rainEnabled} onChange={(rainEnabled) => patchState({ rainEnabled })} /></ControlSection>
               <ControlSection label="STORM" text="Shape thunder intensity, distance, and thunder-to-wind character."><Switch label="Storm AMBIENCE" checked={state.thunderEnabled} onChange={(thunderEnabled) => patchState({ thunderEnabled })} /><div className="ambience-stack"><RangeRow label="Intensity" value={state.thunderVolume} min={0} max={1} step={0.01} onChange={(thunderVolume) => patchState({ thunderVolume })} /><RangeRow label="Distance" value={state.thunderDistance} min={0} max={1} step={0.01} onChange={(thunderDistance) => patchState({ thunderDistance })} /><RangeRow label="Character" value={state.thunderCharacter} min={0} max={20} step={0.1} onChange={(thunderCharacter) => patchState({ thunderCharacter })} left="⚡" right="༄" /></div></ControlSection>
             </div>
           </div>
