@@ -80,6 +80,7 @@ export default function App() {
     const keys = Object.keys(toneStates);
     return { ...initialState, toneStateKey: keys[Math.floor(Math.random() * keys.length)] || '' };
   });
+  const [diceRollId, setDiceRollId] = useState(0);
   const stateRef = useRef(state);
   const engineRef = useRef<ToneAudioBackend | null>(null);
   const noiseRef = useRef<NoiseGenerator | null>(null);
@@ -160,6 +161,13 @@ export default function App() {
     const next = updater(stateRef.current);
     stateRef.current = next;
     if (isMountedRef.current) setState(next);
+  }
+
+  function randomizeToneState(): void {
+    const keys = toneStateKeys.filter((key) => key !== stateRef.current.toneStateKey);
+    const choices = keys.length ? keys : toneStateKeys;
+    setDiceRollId((current) => current + 1);
+    applyToneState(choices[Math.floor(Math.random() * choices.length)]);
   }
 
   function resetSchedulerTiming(offset = 0.12): void {
@@ -600,7 +608,7 @@ export default function App() {
             <span className="section-label">TONE STATE</span>
             <p>Load a full sound state.</p>
           </div>
-          <div className="control-group preset-row"><label htmlFor="tone-state">STATE</label><select id="tone-state" value={state.toneStateKey} onChange={(event) => applyToneState(event.target.value)}>{toneStateKeys.map((key) => <option key={key} value={key}>{toneStates[key].name}</option>)}</select><button type="button" className="dice-btn" aria-label="Random tone state" onClick={() => { const keys = toneStateKeys.filter((key) => key !== stateRef.current.toneStateKey); applyToneState((keys.length ? keys : toneStateKeys)[Math.floor(Math.random() * (keys.length ? keys.length : toneStateKeys.length))]); }}><span className="dice-scene" aria-hidden="true"><span className={`dice-cube dice-current-${diceStateFace}`}>{diceFaces.map((face) => <span key={face} className={`dice-face dice-face-${face}`} style={{ backgroundImage: `url(${assetBaseUrl}static/dice-face-${face}.svg)` }} />)}</span></span></button></div>
+          <div className="control-group preset-row"><label htmlFor="tone-state">STATE</label><select id="tone-state" value={state.toneStateKey} onChange={(event) => applyToneState(event.target.value)}>{toneStateKeys.map((key) => <option key={key} value={key}>{toneStates[key].name}</option>)}</select><button type="button" className={`dice-btn${diceRollId ? ' is-rolling' : ''}`} aria-label="Random tone state" onClick={randomizeToneState}><span className="dice-scene" aria-hidden="true"><span key={diceRollId} className={`dice-cube dice-current-${diceStateFace}`}>{diceFaces.map((face) => <span key={face} className={`dice-face dice-face-${face}`} style={{ backgroundImage: `url(${assetBaseUrl}static/dice-face-${face}.svg)` }} />)}</span></span></button></div>
         </div>
 
         <section className="control-panel" aria-label="Session controls">

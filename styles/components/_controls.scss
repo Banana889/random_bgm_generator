@@ -295,12 +295,20 @@ input[type="range"] {
         transform: translateY(-1px);
         box-shadow: 0 7px 18px rgba(42, 169, 169, 0.16), inset 0 0 16px rgba(42, 169, 169, 0.08);
 
+    }
+
+    &.is-rolling {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent);
+        box-shadow: 0 8px 20px rgba(42, 169, 169, 0.2), inset 0 0 16px rgba(42, 169, 169, 0.08);
+
         &::after {
-            animation: dice-shadow 0.9s ease-out both;
+            animation: dice-shadow 0.32s ease-out both;
         }
 
         .dice-cube {
-            animation: dice-cube-roll 0.84s cubic-bezier(0.24, 0.68, 0.2, 1) infinite;
+            animation: dice-cube-roll 0.32s cubic-bezier(0.18, 0.78, 0.2, 1) both;
         }
     }
 
@@ -449,7 +457,7 @@ input[type="range"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .dice-btn:hover {
+    .dice-btn.is-rolling {
         .dice-cube,
         &::after {
             animation: none;
