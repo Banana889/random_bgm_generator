@@ -60,3 +60,8 @@ See [docs/migration.md](./docs/migration.md) for migration details.
 See [docs/TODO.md](./docs/TODO.md).
 
 If you enjoy Driftone, consider giving this repo a star.
+
+
+## Acknowledgements
+
+- Special thanks to [LINUX.DO](https://linux.do/) for providing a promotion platform.
