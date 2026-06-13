@@ -75,7 +75,7 @@
     }
 
     .melody-trail {
-        flex: 0 1 128px;
+        flex: 0 1 168px;
         min-height: 0;
         padding: 8px;
         order: 2;
@@ -83,7 +83,7 @@
 
     .trail-stage {
         height: 100%;
-        min-height: 86px;
+        min-height: 124px;
     }
 
     .trail-note {
@@ -279,7 +279,31 @@
     }
 
     #log {
-        display: none;
+        flex: 0 1 96px;
+        min-height: 72px;
+        order: 4;
+        gap: 1px;
+        padding: 8px;
+        border-radius: 14px;
+        font-size: 0.72rem;
+    }
+
+    .note-event {
+        grid-template-columns: 34px 28px minmax(44px, 1fr) minmax(36px, 0.72fr);
+        gap: 6px;
+        padding: 3px 1px;
+    }
+
+    .event-note {
+        font-size: 0.8rem;
+    }
+
+    .event-beats {
+        font-size: 0.62rem;
+    }
+
+    .event-chord {
+        font-size: 0.66rem;
     }
 }
 
@@ -301,7 +325,12 @@
     }
 
     .trail-stage {
-        min-height: 78px;
+        min-height: 108px;
+    }
+
+    #log {
+        flex-basis: 86px;
+        min-height: 66px;
     }
 
     .control-section {
