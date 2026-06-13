@@ -380,7 +380,10 @@ input[type="range"] {
     width: 100%;
     height: 100%;
     border-radius: 4px;
-    background: #9adbd2 var(--dice-face-url) center / cover no-repeat;
+    background-color: #9adbd2;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
     box-shadow: inset 0 0 0 1px rgba(7, 17, 17, 0.36), inset 0 6px 9px rgba(255, 255, 255, 0.18), inset 0 -7px 10px rgba(7, 17, 17, 0.22);
     backface-visibility: visible;
 }
