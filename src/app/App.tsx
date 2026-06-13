@@ -10,7 +10,7 @@ import { generateNewMotif, getNextChordKey, pickGoHomeNote } from '../music/comp
 import { createTimerWorker } from '../platform/createTimerWorker';
 import type { AppState, DrumTrailEvent, MelodyTrailEvent, TabKey } from './types';
 
-const SCHEDULE_LOOKAHEAD = 0.25;
+const SCHEDULE_BUFFER_SECONDS = 1.5;
 const MAX_MELODY_TRAIL = 64;
 const MAX_DRUM_TRAIL = 160;
 const VISUAL_FLOW_SECONDS = 7.2;
@@ -148,14 +148,14 @@ export default function App() {
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && stateRef.current.isPlaying) resetSchedulerTiming(0.08);
+      if (!document.hidden && stateRef.current.isPlaying) recoverSchedulerTiming(0.08);
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   function patchState(patch: Partial<AppState>): void {
-    setState((current) => ({ ...current, ...patch }));
+    updateState((current) => ({ ...current, ...patch }));
   }
 
   function updateState(updater: (current: AppState) => AppState): void {
@@ -177,6 +177,25 @@ export default function App() {
     const nextBeatTime = engine.getCurrentTime() + offset;
     nextBeatTimeRef.current = nextBeatTime;
     melodyBusyUntilRef.current = nextBeatTime;
+  }
+
+  function resetMusicBuffer(offset = 0.08): void {
+    if (!stateRef.current.isPlaying) return;
+    const engine = engineRef.current;
+    if (!engine) return;
+    const now = engine.getCurrentTime();
+    engine.stopAll(now);
+    nextBeatTimeRef.current = now + offset;
+    melodyBusyUntilRef.current = nextBeatTimeRef.current;
+  }
+
+  function recoverSchedulerTiming(offset = 0.08): void {
+    const engine = engineRef.current;
+    if (!engine) return;
+    const recoveryTime = engine.getCurrentTime() + offset;
+    if (nextBeatTimeRef.current >= recoveryTime) return;
+    nextBeatTimeRef.current = recoveryTime;
+    melodyBusyUntilRef.current = Math.max(melodyBusyUntilRef.current, recoveryTime);
   }
 
   function clearDrumFill(current: AppState): AppState {
@@ -331,7 +350,7 @@ export default function App() {
     }
 
     let nextState = stateRef.current;
-    while (nextBeatTimeRef.current < now + SCHEDULE_LOOKAHEAD) {
+    while (nextBeatTimeRef.current < now + SCHEDULE_BUFFER_SECONDS) {
       const isOnBeat = stepIndexRef.current % 2 === 0;
       const currentHalfBeatInBar = stepIndexRef.current % (nextState.beatsPerBar * 2);
       const currentBeatInBar = Math.floor(stepIndexRef.current / 2) % nextState.beatsPerBar;
@@ -506,6 +525,7 @@ export default function App() {
   function applyToneState(key: string): void {
     const toneState = toneStates[key];
     if (!toneState) return;
+    const shouldResetBuffer = stateRef.current.isPlaying;
     const preset = resolveToneState(toneState);
     setState((current) => {
       const next = clearDrumFill({
@@ -539,12 +559,24 @@ export default function App() {
       stateRef.current = next;
       return next;
     });
+    if (shouldResetBuffer) resetMusicBuffer();
   }
 
   function setInstrument(key: string): void {
     engineRef.current?.setInstrument(key);
     engineRef.current?.updateLeadTremolo(stateRef.current.bpm);
     patchState({ currentInstrumentKey: key });
+    resetMusicBuffer();
+  }
+
+  function setPreset(key: string): void {
+    patchState({ currentPresetKey: key, currentChordKey: null });
+    resetMusicBuffer();
+  }
+
+  function setBpm(bpm: number): void {
+    patchState({ bpm });
+    resetMusicBuffer();
   }
 
   function setBeatsPerBar(value: number): void {
@@ -558,6 +590,8 @@ export default function App() {
         drumFillBarsUntilAuto: AUTO_DRUM_FILL_INTERVAL_BARS
       })
     );
+    stepIndexRef.current = 0;
+    resetMusicBuffer();
   }
 
   function toggleDrums(enabled: boolean): void {
@@ -573,6 +607,7 @@ export default function App() {
             })
           )
     );
+    resetMusicBuffer();
   }
 
   return (
@@ -624,12 +659,12 @@ export default function App() {
           </div>
           <div className="tab-panels">
             <div className="tab-panel active" role="tabpanel" data-panel="melody" hidden={state.activeTab !== 'melody'}>
-              <ControlSection label="HARMONY" text="Choose the tonal world and chord graph."><ControlSelect label="MODE / SCALE" value={state.currentPresetKey} onChange={(value) => patchState({ currentPresetKey: value, currentChordKey: null })} options={Object.entries(PRESETS).map(([key, preset]) => [key, preset.name])} /></ControlSection>
+              <ControlSection label="HARMONY" text="Choose the tonal world and chord graph."><ControlSelect label="MODE / SCALE" value={state.currentPresetKey} onChange={setPreset} options={Object.entries(PRESETS).map(([key, preset]) => [key, preset.name])} /></ControlSection>
               <ControlSection label="TIMBRE" text="Shape the lead and pad instrument color."><ControlSelect label="SOUND / TIMBRE" value={state.currentInstrumentKey} onChange={setInstrument} options={Object.entries(INSTRUMENT_PRESETS).map(([key, preset]) => [key, preset.name])} /></ControlSection>
               <div className="control-section"><Range label={`MELODY VOL: ${formatVolume(state.melodyVolume)}`} value={state.melodyVolume} min={0} max={1} step={0.01} onChange={(melodyVolume) => patchState({ melodyVolume })} /><Range label={`CHORD VOL: ${formatVolume(state.chordVolume)}`} value={state.chordVolume} min={0} max={1} step={0.01} onChange={(chordVolume) => patchState({ chordVolume })} /></div>
             </div>
             <div className="tab-panel" role="tabpanel" data-panel="rhythm" hidden={state.activeTab !== 'rhythm'}>
-              <ControlSection label="METER" text="Set the grid that drives phrases and chords."><ControlSelect label="TIME SIG" value={String(state.beatsPerBar)} onChange={(value) => setBeatsPerBar(Number(value))} options={[["4", "4/4"], ["3", "3/4"], ["6", "6/8"]]} /><Range label={`BPM ${beatUnit}: ${state.bpm}`} title={beatUnitTitle} value={state.bpm} min={40} max={160} step={1} onChange={(bpm) => patchState({ bpm })} /></ControlSection>
+              <ControlSection label="METER" text="Set the grid that drives phrases and chords."><ControlSelect label="TIME SIG" value={String(state.beatsPerBar)} onChange={(value) => setBeatsPerBar(Number(value))} options={[["4", "4/4"], ["3", "3/4"], ["6", "6/8"]]} /><Range label={`BPM ${beatUnit}: ${state.bpm}`} title={beatUnitTitle} value={state.bpm} min={40} max={160} step={1} onChange={setBpm} /></ControlSection>
               <ControlSection label="PULSE" text="Control the tempo and percussion layer."><Switch label="DRUMS" checked={state.isDrumsEnabled} onChange={toggleDrums} /><Range label={`DRUM VOL: ${formatVolume(state.drumVolume)}`} value={state.drumVolume} min={0} max={1} step={0.01} onChange={(drumVolume) => patchState({ drumVolume })} /><Switch label="FILL" checked={state.isDrumFillEnabled} onChange={(isDrumFillEnabled) => patchState({ isDrumFillEnabled: state.isPlaying && state.isDrumsEnabled ? isDrumFillEnabled : false, drumFillBarsUntilAuto: AUTO_DRUM_FILL_INTERVAL_BARS })} className={`control-group inline-control fill-control${state.drumFillActive ? ' is-active' : state.drumFillQueued ? ' is-queued' : ''}`} /></ControlSection>
             </div>
             <div className="tab-panel" role="tabpanel" data-panel="ambience" hidden={state.activeTab !== 'ambience'}>

@@ -1,6 +1,6 @@
 const workerSource = `
 let timerID = null;
-const interval = 25;
+const interval = 250;
 self.onmessage = function(e) {
   if (e.data === "start") {
     if (timerID) clearInterval(timerID);
