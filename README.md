@@ -2,7 +2,7 @@
   <img src="public/static/driftone-icon-1024.svg" alt="Driftone icon" width="64" align="absmiddle" /> Driftone
 </h1>
 
-<p align="center"><strong>Generative ambient music and white noise, anchored in a tranquil harbor.</strong></p>
+<p align="center"><strong>Drift into Tone, Float into Calm.</strong></p>
 
 <p align="center">
   <a href="https://banana889.github.io/Driftone/"><img src="https://img.shields.io/badge/Demo-GitHub%20Pages-263238?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Pages demo" /></a>

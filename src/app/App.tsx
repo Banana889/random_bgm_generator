@@ -583,7 +583,7 @@ export default function App() {
             <img src={`${assetBaseUrl}static/driftone-icon-1024.svg`} alt="Driftone logo" className="brand-logo" />
             <h1>Driftone</h1>
           </div>
-          <p>Generative ambient music and white noise, anchored in a tranquil harbor.</p>
+          <p>drift into tone, float into calm.</p>
         </div>
 
         <div className="display-area" id="main-ui" style={{ opacity: state.isPlaying ? 1 : 0.34 }}>
