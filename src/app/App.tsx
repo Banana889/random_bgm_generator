@@ -242,7 +242,6 @@ export default function App() {
     if (noiseRef.current) {
       noiseRef.current.setFilterFreq(freq);
       noiseRef.current.setFilterQ(character);
-      noiseRef.current.setType(character > 5 ? 'bandpass' : 'lowpass');
       noiseRef.current.setVolume(current.isPlaying && current.thunderEnabled ? current.thunderVolume : 0);
     }
 
